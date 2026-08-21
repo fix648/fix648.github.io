@@ -1,1 +1,103 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Personal Portal</title><link rel="stylesheet" href="style.css"></head><body><aside><div class="brand">◆ <span>Personal Portal</span></div><nav><button class="active">Dashboard</button><button>Notes</button><button>Trading Journal</button><button>Workout Tracker</button><button>Daily Planner</button><button>Calculator</button><button>File Manager</button><button>Web Tools</button></nav><div class="bottom"><button>Permissions</button><button>Settings</button><button id="theme">Dark Mode</button></div></aside><main><header><div><h1>Welcome back</h1><p>Your private workspace, all in one place.</p></div><div class="avatar">SM</div></header><section class="hero"><div><h2>Everything you need. One clean workspace.</h2><p>Open a tool below to get started.</p></div><div class="badge">Portal Shell v1</div></section><h3>Your Tools</h3><section class="grid"><article><span>▣</span><h4>Notes</h4><p>Write and organize your notes.</p><a href="#">Open →</a></article><article><span>↗</span><h4>Trading Journal</h4><p>Track and review your trades.</p><a href="#">Open →</a></article><article><span>◎</span><h4>Workout Tracker</h4><p>Plan and track workouts.</p><a href="#">Open →</a></article><article><span>□</span><h4>Daily Planner</h4><p>Organize tasks and plans.</p><a href="#">Open →</a></article><article><span>＋</span><h4>Calculator</h4><p>Quick personal calculations.</p><a href="#">Open →</a></article><article><span>⌁</span><h4>File Manager</h4><p>Your files and documents.</p><a href="#">Open →</a></article></section><section class="panels"><div><h3>Recent Notes</h3><p>No notes yet.</p></div><div><h3>Activity</h3><p>Portal initialized successfully.</p></div></section></main><script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>My Personal Portal</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <section id="resetScreen" class="auth-screen hidden" aria-live="polite">
+    <div class="auth-card">
+      <div class="auth-brand">◆ <span>Personal Portal</span></div>
+      <div id="resetFormWrap">
+        <p class="eyebrow">ACCOUNT RECOVERY</p>
+        <h1>Set a new password</h1>
+        <p class="muted">Choose a new base password for your account. The minute-based suffix is added only when you sign in.</p>
+
+        <form id="resetPasswordForm" novalidate>
+          <label for="newPassword">New base password</label>
+          <div class="password-field">
+            <input id="newPassword" name="newPassword" type="password" autocomplete="new-password" minlength="8" required />
+            <button class="toggle-password" type="button" data-target="newPassword">Show</button>
+          </div>
+
+          <label for="confirmPassword">Confirm password</label>
+          <div class="password-field">
+            <input id="confirmPassword" name="confirmPassword" type="password" autocomplete="new-password" minlength="8" required />
+            <button class="toggle-password" type="button" data-target="confirmPassword">Show</button>
+          </div>
+
+          <div id="resetMessage" class="form-message" role="status"></div>
+          <button id="savePasswordBtn" class="primary-btn" type="submit">Save new password</button>
+        </form>
+      </div>
+
+      <div id="resetSuccess" class="success-box hidden">
+        <div class="success-icon">✓</div>
+        <h2>Password updated</h2>
+        <p>Your new base password is ready. Use it with the current minute suffix when you sign in.</p>
+        <a class="primary-btn link-btn" href="/">Return to portal</a>
+      </div>
+    </div>
+  </section>
+
+  <div id="portalApp" class="portal-app">
+    <aside>
+      <div class="brand">◆ <span>Personal Portal</span></div>
+      <nav>
+        <button class="active">Dashboard</button>
+        <button>Notes</button>
+        <button>Trading Journal</button>
+        <button>Workout Tracker</button>
+        <button>Daily Planner</button>
+        <button>Calculator</button>
+        <button>File Manager</button>
+        <button>Web Tools</button>
+      </nav>
+      <div class="bottom">
+        <button>Permissions</button>
+        <button>Settings</button>
+        <button id="theme">Dark Mode</button>
+      </div>
+    </aside>
+
+    <main>
+      <header>
+        <div>
+          <h1>Welcome back</h1>
+          <p>Your private workspace, all in one place.</p>
+        </div>
+        <div class="avatar">SM</div>
+      </header>
+
+      <section class="hero">
+        <div>
+          <h2>Everything you need. One clean workspace.</h2>
+          <p>Open a tool below to get started.</p>
+        </div>
+        <div class="badge">Portal Shell v2</div>
+      </section>
+
+      <h3>Your Tools</h3>
+      <section class="grid">
+        <article><span>▣</span><h4>Notes</h4><p>Write and organize your notes.</p><a href="#">Open →</a></article>
+        <article><span>↗</span><h4>Trading Journal</h4><p>Track and review your trades.</p><a href="#">Open →</a></article>
+        <article><span>◎</span><h4>Workout Tracker</h4><p>Plan and track workouts.</p><a href="#">Open →</a></article>
+        <article><span>□</span><h4>Daily Planner</h4><p>Organize tasks and plans.</p><a href="#">Open →</a></article>
+        <article><span>＋</span><h4>Calculator</h4><p>Quick personal calculations.</p><a href="#">Open →</a></article>
+        <article><span>⌁</span><h4>File Manager</h4><p>Your files and documents.</p><a href="#">Open →</a></article>
+      </section>
+
+      <section class="panels">
+        <div><h3>Recent Notes</h3><p>No notes yet.</p></div>
+        <div><h3>Activity</h3><p>Portal initialized successfully.</p></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="app.js"></script>
+</body>
+</html>
