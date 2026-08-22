@@ -397,16 +397,41 @@ async function notebookMenu(nb){
 async function createNotebook(){
   const name = prompt("Notebook name:")?.trim();
   if (!name) return;
+
+  const normalizedName = name.toLowerCase();
+
+  const duplicate = notesState.notebooks.some(
+    (item) => item.name.trim().toLowerCase() === normalizedName
+  );
+
+  if (duplicate) {
+    alert(`A notebook named "${name}" already exists.`);
+    return;
+  }
+
   const user = await getCurrentUser();
+
   const { data, error } = await client.from("notebooks").insert({
     user_id: user.id,
     name,
     icon: "folder",
     sort_order: notesState.notebooks.length,
   }).select().single();
-  if (error) return showNotesError(error.message);
+
+  if (error) {
+    if (
+      error.code === "23505" ||
+      String(error.message || "").toLowerCase().includes("duplicate")
+    ) {
+      alert(`A notebook named "${name}" already exists.`);
+      return;
+    }
+    return showNotesError(error.message);
+  }
+
   notesState.notebooks.push(data);
   notesState.selectedNotebookId = data.id;
+  await loadNoteCounts();
   await loadNotes();
   renderNotebooks();
 }
