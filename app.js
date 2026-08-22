@@ -91,6 +91,8 @@ const notesState = {
   user: null,
   notebooks: [],
   notes: [],
+  notebookCounts: {},
+  totalNotesCount: 0,
   selectedNotebookId: "all",
   selectedNoteId: null,
   editor: null,
@@ -149,6 +151,26 @@ async function loadNotebooks(){
   renderNotebooks();
 }
 
+async function loadNoteCounts(){
+  const user = await getCurrentUser();
+  const { data, error } = await client.from("notes")
+    .select("notebook_id")
+    .eq("user_id", user.id)
+    .eq("is_deleted", false)
+    .eq("is_archived", false);
+
+  if (error) throw error;
+
+  const counts = {};
+  for (const note of (data || [])) {
+    const key = note.notebook_id || "__none__";
+    counts[key] = (counts[key] || 0) + 1;
+  }
+
+  notesState.notebookCounts = counts;
+  notesState.totalNotesCount = (data || []).length;
+}
+
 async function loadNotes(){
   const user = await getCurrentUser();
   let query = client.from("notes")
@@ -185,20 +207,20 @@ function renderNotebooks(){
       <button class="notebook-menu" title="Notebook options">⋮</button>
     `;
     row.querySelector(".notebook-name").textContent = nb.name;
-    const nbCount = notesState.selectedNotebookId === nb.id ? notesState.notes.length : "";
+    const nbCount = notesState.notebookCounts[nb.id] || 0;
     row.querySelector(".notebook-count").textContent = nbCount;
     row.querySelector(".notebook-item").addEventListener("click", async () => {
       notesState.selectedNotebookId = nb.id;
       notesState.selectedNoteId = null;
-      renderNotebooks();
       await loadNotes();
+      renderNotebooks();
       clearEditorSelection();
     });
     row.querySelector(".notebook-menu").addEventListener("click", () => notebookMenu(nb));
     list.appendChild(row);
   }
   document.querySelector('[data-notebook="all"]').classList.toggle("active", notesState.selectedNotebookId === "all");
-  $("allNotesCount").textContent = notesState.selectedNotebookId === "all" ? notesState.notes.length : "—";
+  $("allNotesCount").textContent = notesState.totalNotesCount;
 }
 
 async function notebookMenu(nb){
@@ -216,7 +238,9 @@ async function notebookMenu(nb){
     if (error) return showNotesError(error.message);
     if (notesState.selectedNotebookId === nb.id) notesState.selectedNotebookId = "all";
     await loadNotebooks();
+    await loadNoteCounts();
     await loadNotes();
+    renderNotebooks();
     clearEditorSelection();
   }
 }
@@ -259,7 +283,7 @@ function renderNotes(){
     btn.addEventListener("click", () => selectNote(note.id));
     list.appendChild(btn);
   }
-  $("allNotesCount").textContent = notesState.selectedNotebookId === "all" ? notesState.notes.length : "—";
+  $("allNotesCount").textContent = notesState.totalNotesCount;
 }
 
 async function createNote(){
@@ -275,7 +299,9 @@ async function createNote(){
   }).select().single();
   if (error) return showNotesError(error.message);
   if (notesState.selectedNotebookId !== "all" && notesState.selectedNotebookId !== notebookId) notesState.selectedNotebookId = notebookId;
+  await loadNoteCounts();
   await loadNotes();
+  renderNotebooks();
   await selectNote(data.id);
 }
 
@@ -399,7 +425,9 @@ async function deleteCurrentNote(){
   const { error } = await client.from("notes").update({ is_deleted: true }).eq("id", notesState.selectedNoteId);
   if (error) return showNotesError(error.message);
   notesState.selectedNoteId = null;
+  await loadNoteCounts();
   await loadNotes();
+  renderNotebooks();
   clearEditorSelection();
 }
 
@@ -414,7 +442,9 @@ async function openNotes(){
   showNotesError("");
   try {
     await loadNotebooks();
+    await loadNoteCounts();
     await loadNotes();
+    renderNotebooks();
   } catch (error) {
     console.error(error);
     showNotesError(error.message || "Notes could not be loaded. Make sure the Notes database setup has been completed.");
@@ -428,8 +458,8 @@ $("openNotesCard")?.addEventListener("click", (e) => { e.preventDefault(); openN
 document.querySelector('[data-notebook="all"]')?.addEventListener("click", async () => {
   notesState.selectedNotebookId = "all";
   notesState.selectedNoteId = null;
-  renderNotebooks();
   await loadNotes();
+  renderNotebooks();
   clearEditorSelection();
 });
 $("newNotebookBtn")?.addEventListener("click", createNotebook);
