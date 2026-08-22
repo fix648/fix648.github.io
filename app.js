@@ -117,6 +117,102 @@ function showNotesError(message){
   el.classList.remove("hidden");
 }
 
+function ensureEditorNotebookSelector(){
+  let select = $("noteNotebookSelect");
+  if (select) return select;
+
+  const actions = document.querySelector(".editor-actions");
+  if (!actions) return null;
+
+  select = document.createElement("select");
+  select.id = "noteNotebookSelect";
+  select.title = "Move note to another notebook";
+  select.style.height = "34px";
+  select.style.border = "1px solid #dfe3ea";
+  select.style.borderRadius = "8px";
+  select.style.background = "#fff";
+  select.style.color = "#45505f";
+  select.style.padding = "0 9px";
+  select.style.maxWidth = "180px";
+  select.style.fontSize = "12px";
+  select.style.cursor = "pointer";
+
+  actions.insertBefore(select, $("saveStatus"));
+
+  select.addEventListener("change", moveCurrentNoteToNotebook);
+  return select;
+}
+
+function renderEditorNotebookSelector(note){
+  const select = ensureEditorNotebookSelector();
+  if (!select || !note) return;
+
+  select.innerHTML = "";
+
+  for (const nb of notesState.notebooks) {
+    const option = document.createElement("option");
+    option.value = nb.id;
+    option.textContent = nb.name;
+    option.selected = note.notebook_id === nb.id;
+    select.appendChild(option);
+  }
+
+  if (!note.notebook_id) {
+    const option = document.createElement("option");
+    option.value = "";
+    option.textContent = "No Notebook";
+    option.selected = true;
+    select.insertBefore(option, select.firstChild);
+  }
+}
+
+async function moveCurrentNoteToNotebook(event){
+  const noteId = notesState.selectedNoteId;
+  if (!noteId) return;
+
+  const note = notesState.notes.find((n) => n.id === noteId);
+  if (!note) return;
+
+  const targetNotebookId = event.target.value || null;
+  if (note.notebook_id === targetNotebookId) return;
+
+  $("saveStatus").textContent = "Moving...";
+
+  const { data, error } = await client
+    .from("notes")
+    .update({ notebook_id: targetNotebookId })
+    .eq("id", noteId)
+    .select("notebook_id,updated_at")
+    .single();
+
+  if (error) {
+    $("saveStatus").textContent = "Move failed";
+    showNotesError(error.message);
+    renderEditorNotebookSelector(note);
+    return;
+  }
+
+  note.notebook_id = data.notebook_id;
+  note.updated_at = data.updated_at;
+
+  await loadNoteCounts();
+
+  if (
+    notesState.selectedNotebookId !== "all" &&
+    notesState.selectedNotebookId !== targetNotebookId
+  ) {
+    notesState.selectedNoteId = null;
+    await loadNotes();
+    renderNotebooks();
+    clearEditorSelection();
+  } else {
+    await loadNotes();
+    renderNotebooks();
+    renderEditorNotebookSelector(note);
+    $("saveStatus").textContent = "Saved";
+  }
+}
+
 async function getCurrentUser(){
   if (notesState.user) return notesState.user;
   const { data: { user }, error } = await client.auth.getUser();
@@ -382,6 +478,7 @@ async function selectNote(id){
   $("editorEmpty").classList.add("hidden");
   $("editorWrap").classList.remove("hidden");
   $("noteTitle").value = note.title || "Untitled Note";
+  renderEditorNotebookSelector(note);
   notesState.editor.commands.setContent(note.content || emptyDoc);
   updateWordCount();
   $("lastUpdated").textContent = `Last updated ${new Date(note.updated_at).toLocaleString()}`;
@@ -421,9 +518,27 @@ async function saveCurrentNote(){
 
 async function deleteCurrentNote(){
   if (!notesState.selectedNoteId) return;
-  if (!confirm("Move this note to Trash?")) return;
-  const { error } = await client.from("notes").update({ is_deleted: true }).eq("id", notesState.selectedNoteId);
+
+  const note = notesState.notes.find((n) => n.id === notesState.selectedNoteId);
+  const title = note?.title || "this note";
+
+  const confirmed = confirm(
+    `Permanently delete "${title}"?
+
+This cannot be undone.`
+  );
+
+  if (!confirmed) return;
+
+  const deletedNoteId = notesState.selectedNoteId;
+
+  const { error } = await client
+    .from("notes")
+    .delete()
+    .eq("id", deletedNoteId);
+
   if (error) return showNotesError(error.message);
+
   notesState.selectedNoteId = null;
   await loadNoteCounts();
   await loadNotes();
@@ -465,6 +580,7 @@ document.querySelector('[data-notebook="all"]')?.addEventListener("click", async
 $("newNotebookBtn")?.addEventListener("click", createNotebook);
 $("newNotebookBottom")?.addEventListener("click", createNotebook);
 $("newNoteBtn")?.addEventListener("click", createNote);
+$("deleteNoteBtn")?.setAttribute("title", "Permanently delete note");
 $("deleteNoteBtn")?.addEventListener("click", deleteCurrentNote);
 $("noteSearch")?.addEventListener("input", (e) => { notesState.search = e.target.value; renderNotes(); });
 $("noteTitle")?.addEventListener("input", scheduleSave);
