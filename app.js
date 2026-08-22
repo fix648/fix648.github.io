@@ -320,25 +320,78 @@ function renderNotebooks(){
 }
 
 async function notebookMenu(nb){
-  const action = prompt(`Notebook: ${nb.name}\nType R to rename or D to delete.`);
+  const action = prompt(
+    `Notebook: ${nb.name}\n\nType R = Rename\nType D = Delete notebook`
+  );
   if (!action) return;
-  if (action.toLowerCase() === "r") {
+
+  const choice = action.trim().toLowerCase();
+
+  if (choice === "r") {
     const name = prompt("New notebook name:", nb.name)?.trim();
     if (!name || name === nb.name) return;
-    const { error } = await client.from("notebooks").update({ name }).eq("id", nb.id);
+
+    const duplicate = notesState.notebooks.some(
+      (item) => item.id !== nb.id && item.name.trim().toLowerCase() === name.toLowerCase()
+    );
+    if (duplicate) {
+      alert(`A notebook named "${name}" already exists.`);
+      return;
+    }
+
+    const { error } = await client
+      .from("notebooks")
+      .update({ name })
+      .eq("id", nb.id);
+
     if (error) return showNotesError(error.message);
+
     await loadNotebooks();
-  } else if (action.toLowerCase() === "d") {
-    if (!confirm(`Delete "${nb.name}"? Notes will move to All Notes and will not be deleted.`)) return;
-    const { error } = await client.from("notebooks").delete().eq("id", nb.id);
+    renderNotebooks();
+
+    const currentNote = notesState.notes.find((n) => n.id === notesState.selectedNoteId);
+    if (currentNote) renderEditorNotebookSelector(currentNote);
+    return;
+  }
+
+  if (choice === "d") {
+    const noteCount = notesState.notebookCounts[nb.id] || 0;
+    const message = noteCount > 0
+      ? `Delete notebook "${nb.name}"?\n\n${noteCount} note(s) inside it will NOT be deleted. They will remain safely available in All Notes.`
+      : `Delete empty notebook "${nb.name}"?`;
+
+    if (!confirm(message)) return;
+
+    const { error } = await client
+      .from("notebooks")
+      .delete()
+      .eq("id", nb.id);
+
     if (error) return showNotesError(error.message);
-    if (notesState.selectedNotebookId === nb.id) notesState.selectedNotebookId = "all";
+
+    if (notesState.selectedNotebookId === nb.id) {
+      notesState.selectedNotebookId = "all";
+    }
+
     await loadNotebooks();
     await loadNoteCounts();
     await loadNotes();
     renderNotebooks();
-    clearEditorSelection();
+
+    if (notesState.selectedNoteId) {
+      const currentNote = notesState.notes.find((n) => n.id === notesState.selectedNoteId);
+      if (currentNote) {
+        selectNote(currentNote.id);
+      } else {
+        clearEditorSelection();
+      }
+    } else {
+      clearEditorSelection();
+    }
+    return;
   }
+
+  alert('Please type only "R" for Rename or "D" for Delete.');
 }
 
 async function createNotebook(){
