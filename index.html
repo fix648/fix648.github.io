@@ -76,10 +76,17 @@
   </section>
 
   <div id="portalApp" class="portal-app hidden">
-    <aside>
+    <aside id="portalSidebar">
       <div class="brand">◆ <span>Personal Portal</span></div>
       <nav>
-        <button class="active">Dashboard</button><button>Notes</button><button>Trading Journal</button><button>Workout Tracker</button><button>Daily Planner</button><button>Calculator</button><button>File Manager</button><button>Web Tools</button>
+        <button id="navDashboard" class="active">Dashboard</button>
+        <button id="navNotes">Notes</button>
+        <button>Trading Journal</button>
+        <button>Workout Tracker</button>
+        <button>Daily Planner</button>
+        <button>Calculator</button>
+        <button>File Manager</button>
+        <button>Web Tools</button>
       </nav>
       <div class="bottom">
         <button>Permissions</button>
@@ -88,19 +95,106 @@
         <button id="theme">Dark Mode</button>
       </div>
     </aside>
-    <main>
-      <header><div><h1>Welcome back</h1><p>Your private workspace, all in one place.</p></div><div class="avatar">SM</div></header>
-      <section class="hero"><div><h2>Everything you need. One clean workspace.</h2><p>Open a tool below to get started.</p></div><div class="badge">Portal Shell v3</div></section>
-      <h3>Your Tools</h3>
-      <section class="grid">
-        <article><span>▣</span><h4>Notes</h4><p>Write and organize your notes.</p><a href="#">Open →</a></article>
-        <article><span>↗</span><h4>Trading Journal</h4><p>Track and review your trades.</p><a href="#">Open →</a></article>
-        <article><span>◎</span><h4>Workout Tracker</h4><p>Plan and track workouts.</p><a href="#">Open →</a></article>
-        <article><span>□</span><h4>Daily Planner</h4><p>Organize tasks and plans.</p><a href="#">Open →</a></article>
-        <article><span>＋</span><h4>Calculator</h4><p>Quick personal calculations.</p><a href="#">Open →</a></article>
-        <article><span>⌁</span><h4>File Manager</h4><p>Your files and documents.</p><a href="#">Open →</a></article>
+
+    <main id="portalMain">
+      <section id="dashboardView">
+        <header><div><h1>Welcome back</h1><p>Your private workspace, all in one place.</p></div><div class="avatar">SM</div></header>
+        <section class="hero"><div><h2>Everything you need. One clean workspace.</h2><p>Open a tool below to get started.</p></div><div class="badge">Portal Shell v4</div></section>
+        <h3>Your Tools</h3>
+        <section class="grid">
+          <article><span>▣</span><h4>Notes</h4><p>Write and organize your notes.</p><a id="openNotesCard" href="#">Open →</a></article>
+          <article><span>↗</span><h4>Trading Journal</h4><p>Track and review your trades.</p><a href="#">Open →</a></article>
+          <article><span>◎</span><h4>Workout Tracker</h4><p>Plan and track workouts.</p><a href="#">Open →</a></article>
+          <article><span>□</span><h4>Daily Planner</h4><p>Organize tasks and plans.</p><a href="#">Open →</a></article>
+          <article><span>＋</span><h4>Calculator</h4><p>Quick personal calculations.</p><a href="#">Open →</a></article>
+          <article><span>⌁</span><h4>File Manager</h4><p>Your files and documents.</p><a href="#">Open →</a></article>
+        </section>
+        <section class="panels"><div><h3>Recent Notes</h3><p id="dashboardRecentNotes">Open Notes to get started.</p></div><div><h3>Activity</h3><p>Portal initialized successfully.</p></div></section>
       </section>
-      <section class="panels"><div><h3>Recent Notes</h3><p>No notes yet.</p></div><div><h3>Activity</h3><p>Portal initialized successfully.</p></div></section>
+
+      <section id="notesView" class="notes-workspace hidden">
+        <div class="notes-topbar">
+          <div>
+            <p class="eyebrow">PERSONAL NOTES</p>
+            <h1>Notes</h1>
+          </div>
+          <button id="backDashboard" class="notes-text-btn">← Dashboard</button>
+        </div>
+
+        <div id="notesError" class="notes-alert hidden"></div>
+
+        <div class="notes-shell">
+          <section class="notebook-pane">
+            <div class="pane-title-row">
+              <div><p class="pane-kicker">1. NOTEBOOKS</p><h2>Notebooks</h2></div>
+              <button id="newNotebookBtn" class="icon-btn" title="New notebook">＋</button>
+            </div>
+            <button class="notebook-item active" data-notebook="all">
+              <span class="notebook-icon">▣</span>
+              <span class="notebook-name">All Notes</span>
+              <span id="allNotesCount" class="notebook-count">0</span>
+            </button>
+            <div id="notebookList" class="notebook-list"></div>
+            <div class="notebook-footer">
+              <button id="newNotebookBottom" class="outline-btn">＋ New Notebook</button>
+            </div>
+          </section>
+
+          <section class="note-list-pane">
+            <div class="pane-title-row compact">
+              <div><p class="pane-kicker green">2. NOTES</p><h2>Notes</h2></div>
+              <button id="newNoteBtn" class="primary-small">＋ New Note</button>
+            </div>
+            <div class="search-wrap">
+              <input id="noteSearch" type="search" placeholder="Search notes..." />
+            </div>
+            <div id="noteList" class="note-list"></div>
+            <div id="emptyNotes" class="empty-state hidden">
+              <strong>No notes yet</strong>
+              <span>Create your first note.</span>
+            </div>
+          </section>
+
+          <section class="editor-pane">
+            <div id="editorEmpty" class="editor-empty">
+              <div>
+                <div class="editor-empty-icon">✎</div>
+                <h2>Select a note</h2>
+                <p>Choose a note from the middle column or create a new one.</p>
+              </div>
+            </div>
+
+            <div id="editorWrap" class="editor-wrap hidden">
+              <div class="editor-header">
+                <input id="noteTitle" class="note-title-input" value="Untitled Note" />
+                <div class="editor-actions">
+                  <span id="saveStatus" class="save-status">Saved</span>
+                  <button id="deleteNoteBtn" class="icon-btn danger" title="Move to trash">⌫</button>
+                </div>
+              </div>
+
+              <div id="editorToolbar" class="editor-toolbar">
+                <button data-command="undo" title="Undo">↶</button>
+                <button data-command="redo" title="Redo">↷</button>
+                <button data-command="paragraph">P</button>
+                <button data-command="heading2">H2</button>
+                <button data-command="bold"><b>B</b></button>
+                <button data-command="italic"><i>I</i></button>
+                <button data-command="bulletList">• List</button>
+                <button data-command="orderedList">1. List</button>
+                <button data-command="blockquote">❝</button>
+              </div>
+
+              <div id="editor" class="tiptap-host"></div>
+
+              <div class="editor-footer">
+                <span id="wordCount">0 words</span>
+                <span id="lastUpdated">Not saved yet</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
     </main>
   </div>
 
