@@ -128,3 +128,205 @@
 .dark .portal-modal-message{color:#a8aeb8}
 .dark .portal-modal-input{background:#1a1d22;border-color:#343942}
 .dark .portal-modal-btn.secondary{background:#1a1d22;border-color:#343942;color:#e9ebef}
+
+
+/* =========================================================
+   Notes UI v5 — Compact Professional Editor Layout
+   UI-only layer. Existing Notes logic remains unchanged.
+   ========================================================= */
+
+#portalMain{max-width:none}
+.notes-workspace{min-height:calc(100vh - 44px)}
+.notes-topbar{margin-bottom:12px;align-items:flex-end}
+.notes-topbar .eyebrow{margin-bottom:5px}
+.notes-topbar h1{font-size:27px;letter-spacing:-.02em}
+.notes-text-btn{background:#fff;border-color:#e4e7ec;box-shadow:0 1px 2px rgba(16,24,40,.03)}
+
+.notes-shell{
+  grid-template-columns:240px 320px minmax(600px,1fr);
+  min-height:calc(100vh - 128px);
+  border-radius:10px;
+  box-shadow:0 2px 10px rgba(16,24,40,.045);
+  border-color:#e4e7ec;
+}
+
+.notebook-pane{padding:13px 10px 10px;background:#fbfcfd}
+.pane-title-row{margin-bottom:10px}
+.pane-title-row h2{font-size:16px;letter-spacing:-.01em}
+.pane-kicker{font-size:9px;letter-spacing:.12em}
+
+.notebook-item{
+  min-height:38px;
+  padding:7px 8px;
+  border-radius:7px;
+  grid-template-columns:20px minmax(0,1fr) auto;
+  gap:7px;
+  font-size:13px;
+}
+.notebook-item.active{
+  background:#e9f0ff;
+  box-shadow:inset 2px 0 0 #2f6feb;
+}
+.notebook-icon{font-size:13px}
+.notebook-count{font-size:10px;min-width:16px;text-align:right}
+.notebook-menu{width:26px;height:28px;font-size:16px}
+.notebook-footer{padding-top:10px}
+.outline-btn{height:36px;border-radius:8px;font-size:12px}
+
+.note-list-pane{padding:13px 12px 10px;background:#fff}
+.pane-title-row.compact{margin-bottom:10px}
+.primary-small{height:33px;padding:0 12px;border-radius:7px}
+.search-wrap{margin-bottom:8px}
+.search-wrap input{
+  height:38px;
+  border-radius:7px;
+  font-size:12px;
+  background:#fbfcfe;
+}
+.note-list{
+  gap:2px;
+  max-height:calc(100vh - 235px);
+  padding-right:0;
+}
+.note-card{
+  border-radius:7px;
+  padding:10px 10px 9px;
+  border-bottom:1px solid #f0f2f5;
+}
+.note-card:hover{background:#f7f9fc}
+.note-card.active{
+  background:#edf4ff;
+  border-color:#8ab2ff;
+  box-shadow:inset 2px 0 0 #2f6feb;
+}
+.note-card strong{font-size:13px;font-weight:650}
+.note-card p{
+  margin:4px 0 6px;
+  font-size:11px;
+  line-height:1.4;
+  color:#667085;
+}
+.note-card small{font-size:9.5px;color:#98a2b3}
+
+.editor-pane{background:#fff;min-height:calc(100vh - 128px)}
+.editor-wrap{min-height:calc(100vh - 128px)}
+.editor-header{
+  padding:14px 18px 10px;
+  gap:12px;
+  border-bottom:1px solid #f0f2f5;
+}
+.note-title-input{
+  font-size:24px;
+  line-height:1.25;
+  letter-spacing:-.025em;
+  font-weight:720;
+}
+.editor-actions{gap:8px}
+#noteNotebookSelect{
+  height:32px !important;
+  border-radius:7px !important;
+  max-width:155px !important;
+  background:#fbfcfd !important;
+  font-size:11px !important;
+}
+.save-status{font-size:10px;color:#0a8f55;white-space:nowrap}
+
+.editor-toolbar{
+  min-height:42px;
+  padding:5px 12px;
+  gap:2px;
+  border-top:0;
+  background:#fbfcfd;
+  position:sticky;
+  top:0;
+  z-index:5;
+}
+.editor-toolbar button{
+  height:30px;
+  min-width:30px;
+  border-radius:6px;
+  padding:0 8px;
+  font-size:11px;
+}
+.editor-toolbar button:hover{background:#eef2f7}
+.editor-toolbar button.active{background:#e7efff;color:#245bd6}
+
+.tiptap-host{min-height:0;overflow:auto;background:#fff}
+.tiptap-editor{
+  min-height:calc(100vh - 262px);
+  max-width:900px;
+  padding:28px 46px 60px;
+  margin:0 auto;
+  font-size:15px;
+  line-height:1.78;
+  color:#20242a;
+}
+.tiptap-editor p{margin:.55em 0}
+.tiptap-editor h2{
+  margin:1.25em 0 .45em;
+  font-size:23px;
+  line-height:1.3;
+  letter-spacing:-.015em;
+}
+.tiptap-editor ul,.tiptap-editor ol{padding-left:26px;margin:.6em 0}
+.tiptap-editor blockquote{
+  border-left:3px solid #4f7ff0;
+  background:#f7f9ff;
+  border-radius:0 7px 7px 0;
+  padding:8px 14px;
+}
+
+.editor-footer{
+  height:34px;
+  padding:0 14px;
+  font-size:10px;
+  background:#fbfcfd;
+  border-top-color:#eef0f3;
+}
+
+.editor-empty{min-height:calc(100vh - 128px);color:#7a8492}
+.editor-empty-icon{font-size:30px}
+.editor-empty h2{font-size:21px;letter-spacing:-.015em}
+
+.portal-modal-overlay{background:rgba(17,24,39,.28);backdrop-filter:blur(3px)}
+.portal-modal{width:min(92vw,400px);border-radius:12px;padding:20px}
+.portal-modal h3{font-size:17px}
+.portal-modal-actions{margin-top:16px}
+.portal-modal-btn{min-height:36px}
+
+.notebook-context-menu{min-width:155px;border-radius:9px;padding:5px}
+.notebook-context-menu button{padding:8px 9px;font-size:12px}
+
+.dark .notebook-pane,
+.dark .note-list-pane,
+.dark .editor-pane,
+.dark .editor-toolbar,
+.dark .editor-footer{background:#17191d}
+.dark .search-wrap input,
+.dark #noteNotebookSelect{
+  background:#202329 !important;
+  border-color:#30343b !important;
+  color:#e8eaed !important;
+}
+.dark .note-card{border-bottom-color:#252931}
+.dark .note-card.active,
+.dark .notebook-item.active{
+  background:#222a38;
+  box-shadow:inset 2px 0 0 #6f9cff;
+}
+.dark .tiptap-editor{color:#e8eaed}
+.dark .tiptap-editor blockquote{background:#1e2633}
+
+@media(max-width:1280px){
+  .notes-shell{grid-template-columns:220px 290px minmax(520px,1fr)}
+  .tiptap-editor{padding:24px 34px 54px}
+}
+@media(max-width:1050px){
+  .notes-shell{grid-template-columns:210px 270px minmax(440px,1fr)}
+  .note-title-input{font-size:21px}
+}
+@media(max-width:900px){
+  .notes-shell{grid-template-columns:220px 1fr}
+  .editor-pane{grid-column:1/-1}
+  .tiptap-editor{max-width:none}
+}
