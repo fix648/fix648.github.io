@@ -140,16 +140,43 @@ function ensureUiLayers(){
     const menu = document.createElement("div");
     menu.id = "notebookContextMenu";
     menu.className = "notebook-context-menu hidden";
-    menu.innerHTML = `
-      <button data-action="rename">Rename</button>
-      <button data-action="delete" class="danger">Delete</button>
-    `;
+    menu.innerHTML = notebookActionMenuHtml();
     document.body.appendChild(menu);
   }
 }
 
 function hideNotebookContextMenu(){
   $("notebookContextMenu")?.classList.add("hidden");
+}
+
+const NOTEBOOK_ACTIONS = [
+  { id: "rename", label: "Rename", danger: false },
+  { id: "delete", label: "Delete", danger: true },
+];
+
+function notebookActionMenuHtml(){
+  return NOTEBOOK_ACTIONS.map((item) => `
+    <button data-action="${item.id}" class="${item.danger ? "danger" : ""}">
+      ${item.label}
+    </button>
+  `).join("");
+}
+
+function showNotebookDotsMenu(button, nb){
+  ensureUiLayers();
+
+  const menu = $("notebookContextMenu");
+  menu.dataset.notebookId = nb.id;
+  menu.innerHTML = notebookActionMenuHtml();
+  menu.innerHTML = notebookActionMenuHtml();
+
+  const rect = button.getBoundingClientRect();
+  const menuWidth = 160;
+  const menuHeight = 92;
+
+  menu.style.left = `${Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)}px`;
+  menu.style.top = `${Math.min(rect.bottom + 6, window.innerHeight - menuHeight - 8)}px`;
+  menu.classList.remove("hidden");
 }
 
 function showNotebookContextMenu(event, nb){
@@ -587,12 +614,14 @@ function renderNotebooks(){
         <span class="notebook-name"></span>
         <span class="notebook-count"></span>
       </button>
+      <button class="notebook-menu" title="Notebook menu" aria-label="Notebook menu">⋮</button>
     `;
     row.querySelector(".notebook-name").textContent = nb.name;
     const nbCount = notesState.notebookCounts[nb.id] || 0;
     row.querySelector(".notebook-count").textContent = nbCount;
 
     const notebookButton = row.querySelector(".notebook-item");
+    const dotsButton = row.querySelector(".notebook-menu");
 
     notebookButton.addEventListener("click", async () => {
       notesState.selectedNotebookId = nb.id;
@@ -606,6 +635,18 @@ function renderNotebooks(){
       notesState.selectedNotebookId = nb.id;
       renderNotebooks();
       showNotebookContextMenu(event, nb);
+    });
+
+    dotsButton.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      notesState.selectedNotebookId = nb.id;
+      renderNotebooks();
+      const liveRow = [...document.querySelectorAll(".notebook-row")].find(
+        (item) => item.querySelector(".notebook-item")?.dataset.id === nb.id
+      );
+      const liveDots = liveRow?.querySelector(".notebook-menu");
+      if (liveDots) showNotebookDotsMenu(liveDots, nb);
     });
 
     list.appendChild(row);

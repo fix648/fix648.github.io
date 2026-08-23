@@ -10,8 +10,13 @@
 @media(max-width:800px){aside{width:70px;padding:20px 8px}.brand span,nav button,.bottom button{font-size:0}.brand{text-align:center}.brand:first-letter{font-size:22px}nav button:before{content:'•';font-size:20px}main{margin-left:70px;padding:20px}.grid{grid-template-columns:1fr}.panels{grid-template-columns:1fr}.hero{align-items:flex-start;gap:15px;flex-direction:column}.auth-card{padding:24px}.notes-shell{display:block}.notebook-pane,.note-list-pane{border-right:0;border-bottom:1px solid #e7e9ee}.note-list{max-height:400px}}
 
 
-/* Notes v4.5 — right-click notebook menu + centered modal */
-.notebook-row{display:block}
+/* Notes v4.6 — unified right-click + dots menu + centered modal */
+.notebook-row{
+  display:grid;
+  grid-template-columns:1fr 30px;
+  gap:2px;
+  align-items:center;
+}
 .notebook-context-menu{
   position:fixed;
   z-index:1200;
