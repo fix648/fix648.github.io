@@ -226,15 +226,76 @@
               </div>
 
               <div id="editorToolbar" class="editor-toolbar">
-                <button data-command="undo" title="Undo">↶</button>
-                <button data-command="redo" title="Redo">↷</button>
-                <button data-command="paragraph">P</button>
-                <button data-command="heading2">H2</button>
-                <button data-command="bold"><b>B</b></button>
-                <button data-command="italic"><i>I</i></button>
-                <button data-command="bulletList">• List</button>
-                <button data-command="orderedList">1. List</button>
-                <button data-command="blockquote">❝</button>
+                <div class="toolbar-group">
+                  <button data-command="undo" class="tool-icon" title="Undo" aria-label="Undo">↶</button>
+                  <button data-command="redo" class="tool-icon" title="Redo" aria-label="Redo">↷</button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                  <button data-command="bold" class="tool-icon" title="Bold" aria-label="Bold"><b>B</b></button>
+                  <button data-command="italic" class="tool-icon" title="Italic" aria-label="Italic"><i>I</i></button>
+                  <button data-command="underline" class="tool-icon" title="Underline" aria-label="Underline"><u>U</u></button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                  <button data-command="bulletList" class="tool-icon" title="Bullet list" aria-label="Bullet list">•≡</button>
+                  <button data-command="orderedList" class="tool-icon" title="Numbered list" aria-label="Numbered list">1≡</button>
+                  <button data-command="blockquote" class="tool-icon" title="Quote" aria-label="Quote">❝</button>
+                  <button data-command="link" class="tool-icon" title="Insert link" aria-label="Insert link">🔗</button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group toolbar-select-group">
+                  <select id="fontFamilySelect" class="toolbar-select" title="Font family" aria-label="Font family">
+                    <option value="">Default font</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Tahoma">Tahoma</option>
+                    <option value="'Times New Roman'">Times New Roman</option>
+                    <option value="'Courier New'">Courier New</option>
+                  </select>
+
+                  <select id="fontSizeSelect" class="toolbar-select toolbar-size-select" title="Font size" aria-label="Font size">
+                    <option value="">Size</option>
+                    <option value="12px">12</option>
+                    <option value="14px">14</option>
+                    <option value="16px">16</option>
+                    <option value="18px">18</option>
+                    <option value="20px">20</option>
+                    <option value="24px">24</option>
+                    <option value="28px">28</option>
+                    <option value="32px">32</option>
+                  </select>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group toolbar-color-group">
+                  <label class="color-tool" title="Text color">
+                    <span class="color-symbol">A</span>
+                    <input id="textColorPicker" type="color" value="#20242a" aria-label="Text color" />
+                  </label>
+                  <label class="color-tool" title="Background color">
+                    <span class="color-symbol highlight-symbol">▰</span>
+                    <input id="highlightColorPicker" type="color" value="#fff2a8" aria-label="Background color" />
+                  </label>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <div class="toolbar-group">
+                  <button data-command="alignLeft" class="tool-icon" title="Align left" aria-label="Align left">≡←</button>
+                  <button data-command="alignCenter" class="tool-icon" title="Align center" aria-label="Align center">≡</button>
+                  <button data-command="alignRight" class="tool-icon" title="Align right" aria-label="Align right">→≡</button>
+                  <button data-command="alignJustify" class="tool-icon" title="Justify" aria-label="Justify">☰</button>
+                  <button data-command="clearFormatting" class="tool-icon" title="Clear all formatting" aria-label="Clear all formatting">Tx</button>
+                </div>
               </div>
 
               <div id="editor" class="tiptap-host"></div>

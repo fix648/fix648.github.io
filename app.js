@@ -986,17 +986,118 @@ async function createNote(){
 async function initTiptap(){
   if (notesState.editorReady) return;
   $("saveStatus").textContent = "Loading editor...";
+
   try {
     const core = await import("https://esm.sh/@tiptap/core@3.29.2");
     const starter = await import("https://esm.sh/@tiptap/starter-kit@3.29.2");
+    const underlineModule = await import("https://esm.sh/@tiptap/extension-underline@3.29.2");
+    const linkModule = await import("https://esm.sh/@tiptap/extension-link@3.29.2");
+    const colorModule = await import("https://esm.sh/@tiptap/extension-color@3.29.2");
+    const textStyleModule = await import("https://esm.sh/@tiptap/extension-text-style@3.29.2");
+    const highlightModule = await import("https://esm.sh/@tiptap/extension-highlight@3.29.2");
+    const textAlignModule = await import("https://esm.sh/@tiptap/extension-text-align@3.29.2");
+    const placeholderModule = await import("https://esm.sh/@tiptap/extension-placeholder@3.29.2");
+
     const Editor = core.Editor;
+    const Extension = core.Extension;
     const StarterKit = starter.default || starter.StarterKit;
+    const Underline = underlineModule.default || underlineModule.Underline;
+    const Link = linkModule.default || linkModule.Link;
+    const Color = colorModule.default || colorModule.Color;
+    const TextStyle = textStyleModule.default || textStyleModule.TextStyle;
+    const Highlight = highlightModule.default || highlightModule.Highlight;
+    const TextAlign = textAlignModule.default || textAlignModule.TextAlign;
+    const Placeholder = placeholderModule.default || placeholderModule.Placeholder;
+
+    const FontFamily = Extension.create({
+      name: "fontFamily",
+      addGlobalAttributes() {
+        return [{
+          types: ["textStyle"],
+          attributes: {
+            fontFamily: {
+              default: null,
+              parseHTML: (element) => element.style.fontFamily || null,
+              renderHTML: (attributes) => {
+                if (!attributes.fontFamily) return {};
+                return { style: `font-family: ${attributes.fontFamily}` };
+              },
+            },
+          },
+        }];
+      },
+      addCommands() {
+        return {
+          setFontFamily: (fontFamily) => ({ chain }) =>
+            chain().setMark("textStyle", { fontFamily }).run(),
+          unsetFontFamily: () => ({ chain }) =>
+            chain().setMark("textStyle", { fontFamily: null }).removeEmptyTextStyle().run(),
+        };
+      },
+    });
+
+    const FontSize = Extension.create({
+      name: "fontSize",
+      addGlobalAttributes() {
+        return [{
+          types: ["textStyle"],
+          attributes: {
+            fontSize: {
+              default: null,
+              parseHTML: (element) => element.style.fontSize || null,
+              renderHTML: (attributes) => {
+                if (!attributes.fontSize) return {};
+                return { style: `font-size: ${attributes.fontSize}` };
+              },
+            },
+          },
+        }];
+      },
+      addCommands() {
+        return {
+          setFontSize: (fontSize) => ({ chain }) =>
+            chain().setMark("textStyle", { fontSize }).run(),
+          unsetFontSize: () => ({ chain }) =>
+            chain().setMark("textStyle", { fontSize: null }).removeEmptyTextStyle().run(),
+        };
+      },
+    });
 
     notesState.editor = new Editor({
       element: $("editor"),
-      extensions: [StarterKit],
+      extensions: [
+        StarterKit,
+        TextStyle,
+        Color,
+        Underline,
+        Link.configure({
+          openOnClick: false,
+          autolink: true,
+          linkOnPaste: true,
+          HTMLAttributes: {
+            rel: "noopener noreferrer",
+            target: "_blank",
+          },
+        }),
+        Highlight.configure({ multicolor: true }),
+        TextAlign.configure({
+          types: ["heading", "paragraph"],
+          alignments: ["left", "center", "right", "justify"],
+        }),
+        Placeholder.configure({
+          placeholder: "Capture your thoughts!",
+          showOnlyWhenEditable: true,
+        }),
+        FontFamily,
+        FontSize,
+      ],
       content: emptyDoc,
-      editorProps: { attributes: { class: "tiptap-editor" } },
+      editorProps: {
+        attributes: {
+          class: "tiptap-editor",
+          spellcheck: "true",
+        },
+      },
       onUpdate: () => {
         updateWordCount();
         scheduleSave();
@@ -1004,8 +1105,10 @@ async function initTiptap(){
       onSelectionUpdate: updateToolbarState,
       onTransaction: updateToolbarState,
     });
+
     notesState.editorReady = true;
     bindToolbar();
+    bindAdvancedToolbarControls();
     $("saveStatus").textContent = "Saved";
   } catch (error) {
     console.error(error);
@@ -1014,41 +1117,129 @@ async function initTiptap(){
 }
 
 function bindToolbar(){
-  $("editorToolbar").querySelectorAll("button[data-command]").forEach(btn => {
-    btn.addEventListener("click", () => {
+  $("editorToolbar").querySelectorAll("button[data-command]").forEach((btn) => {
+    btn.addEventListener("click", async () => {
       const e = notesState.editor;
       if (!e) return;
+
       const chain = e.chain().focus();
       const cmd = btn.dataset.command;
+
       if (cmd === "undo") chain.undo().run();
       else if (cmd === "redo") chain.redo().run();
-      else if (cmd === "paragraph") chain.setParagraph().run();
-      else if (cmd === "heading2") chain.toggleHeading({ level: 2 }).run();
       else if (cmd === "bold") chain.toggleBold().run();
       else if (cmd === "italic") chain.toggleItalic().run();
+      else if (cmd === "underline") chain.toggleUnderline().run();
       else if (cmd === "bulletList") chain.toggleBulletList().run();
       else if (cmd === "orderedList") chain.toggleOrderedList().run();
       else if (cmd === "blockquote") chain.toggleBlockquote().run();
+      else if (cmd === "alignLeft") chain.setTextAlign("left").run();
+      else if (cmd === "alignCenter") chain.setTextAlign("center").run();
+      else if (cmd === "alignRight") chain.setTextAlign("right").run();
+      else if (cmd === "alignJustify") chain.setTextAlign("justify").run();
+      else if (cmd === "clearFormatting") {
+        chain.unsetAllMarks().clearNodes().setTextAlign("left").run();
+      }
+      else if (cmd === "link") {
+        const previousUrl = e.getAttributes("link").href || "";
+        const url = await centeredModal({
+          title: e.isActive("link") ? "Edit Link" : "Insert Link",
+          message: "Enter the web address. Leave blank to remove the current link.",
+          inputValue: previousUrl,
+          inputPlaceholder: "https://example.com",
+          confirmText: previousUrl ? "Update" : "Add Link",
+        });
+
+        if (url === null) return;
+
+        if (!url) {
+          e.chain().focus().extendMarkRange("link").unsetLink().run();
+        } else {
+          let safeUrl = url.trim();
+          if (!/^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(safeUrl)) {
+            safeUrl = `https://${safeUrl}`;
+          }
+          e.chain().focus().extendMarkRange("link").setLink({ href: safeUrl }).run();
+        }
+      }
+
       updateToolbarState();
     });
+  });
+}
+
+
+function bindAdvancedToolbarControls(){
+  const editor = notesState.editor;
+  if (!editor) return;
+
+  $("fontFamilySelect")?.addEventListener("change", (event) => {
+    const value = event.target.value;
+    const chain = editor.chain().focus();
+    if (value) chain.setFontFamily(value).run();
+    else chain.unsetFontFamily().run();
+    updateToolbarState();
+  });
+
+  $("fontSizeSelect")?.addEventListener("change", (event) => {
+    const value = event.target.value;
+    const chain = editor.chain().focus();
+    if (value) chain.setFontSize(value).run();
+    else chain.unsetFontSize().run();
+    updateToolbarState();
+  });
+
+  $("textColorPicker")?.addEventListener("input", (event) => {
+    editor.chain().focus().setColor(event.target.value).run();
+    updateToolbarState();
+  });
+
+  $("highlightColorPicker")?.addEventListener("input", (event) => {
+    editor.chain().focus().setHighlight({ color: event.target.value }).run();
+    updateToolbarState();
   });
 }
 
 function updateToolbarState(){
   const e = notesState.editor;
   if (!e) return;
-  $("editorToolbar").querySelectorAll("button[data-command]").forEach(btn => {
+
+  $("editorToolbar").querySelectorAll("button[data-command]").forEach((btn) => {
     const cmd = btn.dataset.command;
     let active = false;
+
     if (cmd === "bold") active = e.isActive("bold");
     else if (cmd === "italic") active = e.isActive("italic");
-    else if (cmd === "heading2") active = e.isActive("heading", { level: 2 });
+    else if (cmd === "underline") active = e.isActive("underline");
     else if (cmd === "bulletList") active = e.isActive("bulletList");
     else if (cmd === "orderedList") active = e.isActive("orderedList");
     else if (cmd === "blockquote") active = e.isActive("blockquote");
-    else if (cmd === "paragraph") active = e.isActive("paragraph");
+    else if (cmd === "link") active = e.isActive("link");
+    else if (cmd === "alignLeft") active = e.isActive({ textAlign: "left" });
+    else if (cmd === "alignCenter") active = e.isActive({ textAlign: "center" });
+    else if (cmd === "alignRight") active = e.isActive({ textAlign: "right" });
+    else if (cmd === "alignJustify") active = e.isActive({ textAlign: "justify" });
+
     btn.classList.toggle("active", active);
   });
+
+  const attrs = e.getAttributes("textStyle") || {};
+  if ($("fontFamilySelect")) {
+    $("fontFamilySelect").value = attrs.fontFamily || "";
+  }
+  if ($("fontSizeSelect")) {
+    $("fontSizeSelect").value = attrs.fontSize || "";
+  }
+
+  const color = attrs.color;
+  if (color && /^#[0-9a-fA-F]{6}$/.test(color) && $("textColorPicker")) {
+    $("textColorPicker").value = color;
+  }
+
+  const highlight = e.getAttributes("highlight")?.color;
+  if (highlight && /^#[0-9a-fA-F]{6}$/.test(highlight) && $("highlightColorPicker")) {
+    $("highlightColorPicker").value = highlight;
+  }
 }
 
 async function selectNote(id){

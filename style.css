@@ -564,3 +564,195 @@
     width:min(90vw,300px);
   }
 }
+
+
+/* =========================================================
+   Notes v6.2 — Professional Editor Toolbar
+   ========================================================= */
+
+.editor-toolbar{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  min-height:46px;
+  padding:6px 10px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  flex-wrap:nowrap;
+  scrollbar-width:thin;
+}
+
+.toolbar-group{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  flex:none;
+}
+
+.toolbar-divider{
+  width:1px;
+  height:22px;
+  background:#e5e7eb;
+  flex:none;
+  margin:0 2px;
+}
+
+.editor-toolbar .tool-icon{
+  width:30px;
+  min-width:30px;
+  height:30px;
+  padding:0;
+  display:grid;
+  place-items:center;
+  border:0;
+  background:transparent;
+  border-radius:6px;
+  color:#4b5563;
+  cursor:pointer;
+  font-size:11px;
+  line-height:1;
+}
+
+.editor-toolbar .tool-icon:hover{
+  background:#eef2f7;
+  color:#1f2937;
+}
+
+.editor-toolbar .tool-icon.active{
+  background:#e8f0ff;
+  color:#245bd6;
+}
+
+.toolbar-select-group{
+  gap:4px;
+}
+
+.toolbar-select{
+  height:30px;
+  min-width:105px;
+  max-width:145px;
+  border:1px solid #dfe3ea;
+  border-radius:6px;
+  background:#fff;
+  color:#4b5563;
+  padding:0 26px 0 8px;
+  font-size:10px;
+  outline:none;
+  cursor:pointer;
+}
+
+.toolbar-size-select{
+  min-width:62px;
+  max-width:68px;
+}
+
+.toolbar-select:focus{
+  border-color:#8fb0ff;
+  box-shadow:0 0 0 2px rgba(49,111,246,.08);
+}
+
+.toolbar-color-group{
+  gap:5px;
+}
+
+.color-tool{
+  width:31px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  position:relative;
+  border-radius:6px;
+  cursor:pointer;
+}
+
+.color-tool:hover{
+  background:#eef2f7;
+}
+
+.color-symbol{
+  font-weight:800;
+  font-size:12px;
+  color:#344054;
+  line-height:1;
+  border-bottom:2px solid currentColor;
+}
+
+.highlight-symbol{
+  font-size:14px;
+  border-bottom:0;
+}
+
+.color-tool input[type="color"]{
+  position:absolute;
+  width:1px;
+  height:1px;
+  opacity:0;
+  pointer-events:none;
+}
+
+.tiptap-editor p.is-editor-empty:first-child::before{
+  content:attr(data-placeholder);
+  float:left;
+  color:#b5bbc5;
+  pointer-events:none;
+  height:0;
+  font-style:italic;
+}
+
+.tiptap-editor a{
+  color:#245bd6;
+  text-decoration:underline;
+  text-underline-offset:2px;
+}
+
+.tiptap-editor mark{
+  border-radius:2px;
+  padding:0 .06em;
+}
+
+.dark .toolbar-divider{
+  background:#343942;
+}
+
+.dark .toolbar-select{
+  background:#202329;
+  border-color:#343942;
+  color:#d8dce3;
+}
+
+.dark .editor-toolbar .tool-icon{
+  color:#b8bec8;
+}
+
+.dark .editor-toolbar .tool-icon:hover{
+  background:#252b36;
+  color:#fff;
+}
+
+.dark .editor-toolbar .tool-icon.active{
+  background:#25314a;
+  color:#8fb2ff;
+}
+
+.dark .color-symbol{
+  color:#d8dce3;
+}
+
+.dark .color-tool:hover{
+  background:#252b36;
+}
+
+.dark .tiptap-editor p.is-editor-empty:first-child::before{
+  color:#646c78;
+}
+
+@media(max-width:1200px){
+  .toolbar-select{
+    min-width:92px;
+    max-width:120px;
+  }
+  .toolbar-size-select{
+    min-width:58px;
+    max-width:62px;
+  }
+}
