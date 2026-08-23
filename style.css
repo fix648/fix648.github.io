@@ -1172,3 +1172,76 @@
     opacity:1;
   }
 }
+
+
+/* Notes v6.4 — compact navigation + Trash */
+.notebook-item,
+.notebook-row{
+  min-height:32px !important;
+}
+.notebook-item button,
+.notebook-row button{
+  padding-top:5px !important;
+  padding-bottom:5px !important;
+}
+.note-card{
+  padding-top:7px !important;
+  padding-bottom:7px !important;
+}
+.note-card.active strong,
+.note-row.active strong{
+  font-weight:800 !important;
+}
+.note-context-menu{
+  width:184px !important;
+  padding:4px !important;
+}
+.note-context-menu button{
+  min-height:29px !important;
+  padding:0 7px !important;
+  font-size:10.5px !important;
+}
+.note-menu-divider{
+  margin:3px 2px !important;
+}
+.note-menu-icon{
+  font-size:11px !important;
+}
+.trash-view-btn{
+  width:calc(100% - 16px);
+  margin:6px 8px 4px;
+  min-height:32px;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:#667085;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 10px;
+  cursor:pointer;
+  text-align:left;
+}
+.trash-view-btn:hover{background:#f2f4f7;color:#344054}
+.trash-modal{width:min(760px,92vw);max-width:760px}
+.trash-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.trash-head h3{margin:2px 0 0}
+.trash-kicker{font-size:9px;font-weight:800;letter-spacing:.12em;color:#667085}
+.trash-close{border:0;background:transparent;font-size:24px;cursor:pointer;color:#667085}
+.trash-help{margin:4px 0 14px;color:#667085;font-size:11px}
+.trash-sections{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.trash-sections h4{margin:0 0 7px;font-size:12px}
+.trash-sections h4 span{color:#98a2b3;font-weight:500}
+.trash-list{border:1px solid #eaecf0;border-radius:9px;overflow:hidden;min-height:54px}
+.trash-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 9px;border-bottom:1px solid #f0f2f5}
+.trash-row:last-child{border-bottom:0}
+.trash-item-main{display:flex;align-items:center;gap:8px;min-width:0}
+.trash-item-main strong{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+.trash-item-main small{font-size:9px;color:#98a2b3}
+.trash-icon{font-size:14px}
+.trash-actions{display:flex;gap:5px}
+.trash-actions button{border:1px solid #d0d5dd;background:#fff;border-radius:6px;padding:5px 7px;font-size:9px;cursor:pointer}
+.trash-actions button:hover{background:#f8fafc}
+.trash-actions button.danger{color:#b42318;border-color:#fecdca}
+.trash-empty{padding:17px;text-align:center;color:#98a2b3;font-size:10px}
+@media(max-width:760px){.trash-sections{grid-template-columns:1fr}.trash-row{align-items:flex-start;flex-direction:column}.trash-actions{width:100%}}

@@ -955,6 +955,14 @@ async function assignNoteColor(note){
     { value: "#8b5cf6", label: "Violet" },
     { value: "#ec4899", label: "Pink" },
     { value: "#64748b", label: "Slate" },
+    { value: "#84cc16", label: "Lime" },
+    { value: "#14b8a6", label: "Teal" },
+    { value: "#0ea5e9", label: "Sky" },
+    { value: "#6366f1", label: "Indigo" },
+    { value: "#a855f7", label: "Purple" },
+    { value: "#d946ef", label: "Fuchsia" },
+    { value: "#f43f5e", label: "Rose" },
+    { value: "#78716c", label: "Stone" },
   ];
 
   const color = await centeredChoiceModal({
@@ -1041,6 +1049,148 @@ async function handleNoteAction(action, note){
   if (action === "color") return assignNoteColor(note);
   if (action === "duplicate") return duplicateNote(note);
   if (action === "trash") return moveNoteToTrash(note);
+}
+
+
+async function openTrashView(){
+  hideNoteContextMenu();
+  hideNotebookContextMenu();
+
+  const [{ data: deletedNotes, error: notesError }, { data: deletedNotebooks, error: notebooksError }] = await Promise.all([
+    client.from("notes")
+      .select("id,notebook_id,title,preview,trashed_at,updated_at")
+      .eq("is_deleted", true)
+      .order("trashed_at", { ascending: false }),
+    client.from("notebooks")
+      .select("id,name,trashed_at")
+      .eq("is_deleted", true)
+      .order("trashed_at", { ascending: false })
+  ]);
+
+  if (notesError || notebooksError) {
+    showNotesError((notesError || notebooksError).message);
+    return;
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "portal-modal-overlay trash-overlay";
+  overlay.innerHTML = `
+    <div class="portal-modal trash-modal" role="dialog" aria-modal="true">
+      <div class="trash-head">
+        <div>
+          <div class="trash-kicker">PERSONAL NOTES</div>
+          <h3>Trash</h3>
+        </div>
+        <button class="trash-close" type="button" aria-label="Close">×</button>
+      </div>
+      <p class="trash-help">Restore an item or permanently delete it.</p>
+      <div class="trash-sections">
+        <section>
+          <h4>Notes <span>${deletedNotes?.length || 0}</span></h4>
+          <div class="trash-list" data-trash-notes></div>
+        </section>
+        <section>
+          <h4>Notebooks <span>${deletedNotebooks?.length || 0}</span></h4>
+          <div class="trash-list" data-trash-notebooks></div>
+        </section>
+      </div>
+    </div>`;
+
+  const close = () => overlay.remove();
+  overlay.querySelector(".trash-close").onclick = close;
+  overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+
+  const notesList = overlay.querySelector("[data-trash-notes]");
+  const notebooksList = overlay.querySelector("[data-trash-notebooks]");
+
+  const empty = (container) => {
+    container.innerHTML = `<div class="trash-empty">Trash is empty.</div>`;
+  };
+
+  if (!deletedNotes?.length) empty(notesList);
+  for (const note of deletedNotes || []) {
+    const row = document.createElement("div");
+    row.className = "trash-row";
+    row.innerHTML = `
+      <div class="trash-item-main"><span class="trash-icon">📝</span><div><strong></strong><small>Note</small></div></div>
+      <div class="trash-actions">
+        <button data-restore>↩ Restore</button>
+        <button class="danger" data-delete>🗑 Delete forever</button>
+      </div>`;
+    row.querySelector("strong").textContent = note.title || "Untitled Note";
+
+    row.querySelector("[data-restore]").onclick = async () => {
+      const { error } = await client.from("notes").update({is_deleted:false, trashed_at:null}).eq("id", note.id);
+      if (error) return showNotesError(error.message);
+      row.remove();
+      await refreshNotesAfterAction();
+      await centeredMessage("Note Restored", "The note was restored.");
+    };
+
+    row.querySelector("[data-delete]").onclick = async () => {
+      const ok = await centeredModal({
+        title:"Permanently Delete Note",
+        message:`Permanently delete "${note.title || "Untitled Note"}"? This cannot be undone.`,
+        confirmText:"Delete Forever",
+        destructive:true
+      });
+      if (!ok) return;
+      const { error } = await client.from("notes").delete().eq("id", note.id);
+      if (error) return showNotesError(error.message);
+      row.remove();
+    };
+    notesList.appendChild(row);
+  }
+
+  if (!deletedNotebooks?.length) empty(notebooksList);
+  for (const notebook of deletedNotebooks || []) {
+    const row = document.createElement("div");
+    row.className = "trash-row";
+    row.innerHTML = `
+      <div class="trash-item-main"><span class="trash-icon">📓</span><div><strong></strong><small>Notebook</small></div></div>
+      <div class="trash-actions">
+        <button data-restore>↩ Restore</button>
+        <button class="danger" data-delete>🗑 Delete forever</button>
+      </div>`;
+    row.querySelector("strong").textContent = notebook.name;
+
+    row.querySelector("[data-restore]").onclick = async () => {
+      const { error } = await client.from("notebooks").update({is_deleted:false, trashed_at:null}).eq("id", notebook.id);
+      if (error) return showNotesError(error.message);
+      row.remove();
+      await loadNotebooks();
+      renderNotebooks();
+      await centeredMessage("Notebook Restored", `"${notebook.name}" was restored.`);
+    };
+
+    row.querySelector("[data-delete]").onclick = async () => {
+      const ok = await centeredModal({
+        title:"Permanently Delete Notebook",
+        message:`Permanently delete "${notebook.name}" and its linked notes? This cannot be undone.`,
+        confirmText:"Delete Forever",
+        destructive:true
+      });
+      if (!ok) return;
+
+      const { error: noteDeleteError } = await client.from("notes").delete().eq("notebook_id", notebook.id);
+      if (noteDeleteError) return showNotesError(noteDeleteError.message);
+
+      const { error } = await client.from("notebooks").delete().eq("id", notebook.id);
+      if (error) return showNotesError(error.message);
+      row.remove();
+    };
+    notebooksList.appendChild(row);
+  }
+
+  document.body.appendChild(overlay);
+}
+
+function bindTrashButton(){
+  const btn = $("trashViewBtn");
+  if (btn && !btn.dataset.bound) {
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", openTrashView);
+  }
 }
 
 function noteMatchesSearch(note){
@@ -1747,6 +1897,7 @@ document.querySelector('[data-notebook="all"]')?.addEventListener("click", async
 });
 
 ensureUiLayers();
+bindTrashButton();
 
 $("noteContextMenu")?.addEventListener("click", async (event) => {
   const button = event.target.closest("button[data-note-action]");
