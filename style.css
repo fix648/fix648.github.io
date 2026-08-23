@@ -330,3 +330,237 @@
   .editor-pane{grid-column:1/-1}
   .tiptap-editor{max-width:none}
 }
+
+
+/* =========================================================
+   Notes v6.1 — Sort/Group + Compact/Detail View
+   ========================================================= */
+
+.note-list-pane{position:relative}
+
+.notes-list-tools{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin:2px 0 8px;
+  min-height:30px;
+}
+.notes-tool-left{
+  display:flex;
+  align-items:center;
+  min-width:0;
+  gap:6px;
+}
+.notes-icon-btn{
+  width:30px;
+  height:30px;
+  border:1px solid transparent;
+  background:transparent;
+  border-radius:7px;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  color:#667085;
+  padding:0;
+  font-size:13px;
+}
+.notes-icon-btn:hover{
+  background:#f1f4f8;
+  color:#344054;
+}
+.notes-icon-btn.active{
+  background:#e9f0ff;
+  color:#245bd6;
+  border-color:#d9e6ff;
+}
+.notes-view-toggle{
+  display:flex;
+  align-items:center;
+  gap:2px;
+}
+.notes-sort-summary{
+  color:#98a2b3;
+  font-size:9.5px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.notes-sort-popover{
+  position:absolute;
+  z-index:40;
+  top:109px;
+  left:10px;
+  width:260px;
+  background:#fff;
+  border:1px solid #e0e4ea;
+  border-radius:9px;
+  box-shadow:0 12px 32px rgba(15,23,42,.16);
+  padding:5px;
+}
+.sort-popover-title{
+  color:#078442;
+  font-size:12px;
+  font-weight:700;
+  padding:8px 9px 7px;
+}
+.sort-parent-row,
+.sort-subpanel button{
+  width:100%;
+  border:0;
+  background:transparent;
+  color:#4a5260;
+  cursor:pointer;
+  border-radius:6px;
+  min-height:34px;
+  display:grid;
+  align-items:center;
+  text-align:left;
+  font-size:11px;
+}
+.sort-parent-row{
+  grid-template-columns:20px 1fr auto 12px;
+  gap:5px;
+  padding:0 8px;
+}
+.sort-parent-row:hover,
+.sort-subpanel button:hover{
+  background:#f3f5f8;
+}
+.sort-value{
+  color:#98a2b3;
+  font-size:9px;
+  max-width:92px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.sort-subpanel{
+  margin:2px 4px 5px 25px;
+  padding-left:6px;
+  border-left:1px solid #e9ecf0;
+}
+.sort-subpanel button{
+  grid-template-columns:1fr 16px;
+  padding:0 8px;
+}
+
+.note-group-heading{
+  color:#078442;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.06em;
+  padding:9px 7px 4px;
+  text-align:left;
+}
+
+.note-list.compact-view{
+  gap:0;
+}
+.note-list.compact-view .note-card{
+  min-height:34px;
+  padding:7px 8px;
+  border-radius:5px;
+  border:1px solid transparent;
+  border-bottom:1px solid #f1f3f5;
+}
+.note-list.compact-view .note-card.active{
+  border-color:#8ab2ff;
+  background:#edf4ff;
+}
+.note-compact-row{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:8px;
+  align-items:center;
+}
+.note-compact-main{
+  display:flex;
+  align-items:center;
+  min-width:0;
+  gap:6px;
+}
+.note-compact-main strong{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  font-size:12px;
+  font-weight:550;
+}
+.note-relative-time{
+  color:#98a2b3;
+  font-size:9px;
+  white-space:nowrap;
+}
+.note-mini-icons{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  flex:none;
+  font-size:8px;
+}
+
+.note-list.detail-view .note-card{
+  padding:10px;
+}
+.note-detail-meta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+  color:#98a2b3;
+  font-size:9px;
+  margin-top:7px;
+}
+.note-notebook-label{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  max-width:75%;
+  color:#667085;
+}
+
+/* Dark mode */
+.dark .notes-sort-popover{
+  background:#1a1d22;
+  border-color:#343942;
+}
+.dark .sort-parent-row,
+.dark .sort-subpanel button{
+  color:#d4d8df;
+}
+.dark .sort-parent-row:hover,
+.dark .sort-subpanel button:hover,
+.dark .notes-icon-btn:hover{
+  background:#252b36;
+}
+.dark .notes-icon-btn.active{
+  background:#25314a;
+  color:#8fb2ff;
+  border-color:#344d7a;
+}
+.dark .sort-subpanel{
+  border-left-color:#343942;
+}
+.dark .note-list.compact-view .note-card{
+  border-bottom-color:#252931;
+}
+.dark .note-detail-meta,
+.dark .note-relative-time,
+.dark .notes-sort-summary{
+  color:#8d96a3;
+}
+.dark .note-notebook-label{
+  color:#b0b6bf;
+}
+
+@media(max-width:900px){
+  .notes-sort-popover{
+    position:fixed;
+    top:120px;
+    left:50%;
+    transform:translateX(-50%);
+    width:min(90vw,300px);
+  }
+}

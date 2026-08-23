@@ -99,6 +99,10 @@ const notesState = {
   editorReady: false,
   saveTimer: null,
   search: "",
+  viewMode: localStorage.getItem("portalNotesViewMode") || "compact",
+  orderBy: localStorage.getItem("portalNotesOrderBy") || "updated_at",
+  sortDirection: localStorage.getItem("portalNotesSortDirection") || "desc",
+  groupBy: localStorage.getItem("portalNotesGroupBy") || "default",
 };
 
 const emptyDoc = { type: "doc", content: [{ type: "paragraph" }] };
@@ -584,7 +588,7 @@ async function loadNoteCounts(){
 async function loadNotes(){
   const user = await getCurrentUser();
   let query = client.from("notes")
-    .select("id,notebook_id,title,content,preview,is_pinned,updated_at,created_at")
+    .select("id,notebook_id,title,content,preview,is_pinned,is_favorite,is_locked,color,updated_at,created_at")
     .eq("user_id", user.id)
     .eq("is_deleted", false)
     .eq("is_archived", false)
@@ -727,21 +731,236 @@ function noteMatchesSearch(note){
   return `${note.title || ""} ${note.preview || ""}`.toLowerCase().includes(q);
 }
 
+
+function getNotebookName(notebookId){
+  if (!notebookId) return "No Notebook";
+  return notesState.notebooks.find((nb) => nb.id === notebookId)?.name || "Unknown Notebook";
+}
+
+function relativeEditedTime(dateValue){
+  const date = new Date(dateValue);
+  const diffMs = Math.max(0, Date.now() - date.getTime());
+  const minutes = Math.floor(diffMs / 60000);
+  const hours = Math.floor(diffMs / 3600000);
+  const days = Math.floor(diffMs / 86400000);
+
+  if (minutes < 1) return "now";
+  if (minutes < 60) return `${minutes}m`;
+  if (hours < 24) return `${hours}h`;
+  if (days < 7) return `${days}d`;
+  if (days < 30) return `${Math.floor(days / 7)}w`;
+  if (days < 365) return `${Math.floor(days / 30)}m`;
+  return `${Math.floor(days / 365)}y`;
+}
+
+function notesCompare(a, b){
+  const direction = notesState.sortDirection === "asc" ? 1 : -1;
+
+  if (notesState.orderBy === "title") {
+    return (a.title || "").localeCompare(b.title || "", undefined, { sensitivity: "base" }) * direction;
+  }
+
+  const key = notesState.orderBy === "created_at" ? "created_at" : "updated_at";
+  const av = new Date(a[key]).getTime();
+  const bv = new Date(b[key]).getTime();
+  return (av - bv) * direction;
+}
+
+function weekKey(dateValue){
+  const d = new Date(dateValue);
+  const tmp = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = tmp.getUTCDay() || 7;
+  tmp.setUTCDate(tmp.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((tmp - yearStart) / 86400000) + 1) / 7);
+  return `${tmp.getUTCFullYear()}-W${String(weekNo).padStart(2, "0")}`;
+}
+
+function defaultGroup(note){
+  if (note.is_pinned) return "PINNED";
+
+  const days = Math.floor((Date.now() - new Date(note.updated_at).getTime()) / 86400000);
+  if (days <= 7) return "RECENT";
+  if (days <= 14) return "LAST WEEK";
+  return "OLDER";
+}
+
+function groupLabelForNote(note){
+  const basis = notesState.orderBy === "created_at" ? note.created_at : note.updated_at;
+  const date = new Date(basis);
+
+  switch (notesState.groupBy) {
+    case "year":
+      return String(date.getFullYear());
+    case "month":
+      return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    case "week":
+      return weekKey(basis);
+    case "abc": {
+      const first = (note.title || "#").trim().charAt(0).toUpperCase();
+      return /[A-Z0-9]/.test(first) ? first : "#";
+    }
+    case "default":
+      return defaultGroup(note);
+    default:
+      return "";
+  }
+}
+
+function buildNoteGroups(notes){
+  if (notesState.groupBy === "none") return [{ label: "", notes }];
+
+  const groups = new Map();
+  for (const note of notes) {
+    const label = groupLabelForNote(note);
+    if (!groups.has(label)) groups.set(label, []);
+    groups.get(label).push(note);
+  }
+
+  let entries = [...groups.entries()];
+
+  if (notesState.groupBy === "default") {
+    const order = ["PINNED", "RECENT", "LAST WEEK", "OLDER"];
+    entries.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
+  } else if (notesState.groupBy === "abc") {
+    entries.sort((a, b) => a[0].localeCompare(b[0]));
+  } else {
+    entries.sort((a, b) => b[0].localeCompare(a[0]));
+  }
+
+  return entries.map(([label, groupedNotes]) => ({ label, notes: groupedNotes }));
+}
+
+function renderSortChecks(){
+  document.querySelectorAll("[data-order-by]").forEach((btn) => {
+    btn.querySelector("span:last-child").textContent =
+      btn.dataset.orderBy === notesState.orderBy ? "✓" : "";
+  });
+
+  document.querySelectorAll("[data-sort-direction]").forEach((btn) => {
+    btn.querySelector("span:last-child").textContent =
+      btn.dataset.sortDirection === notesState.sortDirection ? "✓" : "";
+  });
+
+  document.querySelectorAll("[data-group-by]").forEach((btn) => {
+    btn.querySelector("span:last-child").textContent =
+      btn.dataset.groupBy === notesState.groupBy ? "✓" : "";
+  });
+
+  const orderLabels = {
+    created_at: "Date created",
+    updated_at: "Date edited",
+    title: "Title",
+  };
+  const directionLabels = {
+    asc: notesState.orderBy === "title" ? "A - Z" : "Oldest - newest",
+    desc: notesState.orderBy === "title" ? "Z - A" : "Newest - oldest",
+  };
+  const groupLabels = {
+    none: "None",
+    default: "Default",
+    year: "Year",
+    month: "Month",
+    week: "Week",
+    abc: "Abc",
+  };
+
+  $("orderByValue").textContent = orderLabels[notesState.orderBy];
+  $("sortDirectionValue").textContent = directionLabels[notesState.sortDirection];
+  $("groupByValue").textContent = groupLabels[notesState.groupBy];
+
+  $("notesSortSummary").textContent =
+    `${orderLabels[notesState.orderBy].replace("Date ", "")} · ${directionLabels[notesState.sortDirection]}`;
+
+  $("compactViewBtn").classList.toggle("active", notesState.viewMode === "compact");
+  $("detailViewBtn").classList.toggle("active", notesState.viewMode === "detail");
+  $("noteList").classList.toggle("compact-view", notesState.viewMode === "compact");
+  $("noteList").classList.toggle("detail-view", notesState.viewMode === "detail");
+}
+
+function closeSortPopover(){
+  $("notesSortPopover")?.classList.add("hidden");
+  document.querySelectorAll(".sort-subpanel").forEach((el) => el.classList.add("hidden"));
+}
+
+function toggleSortPanel(panelName){
+  const target = $(`${panelName}Panel`);
+  if (!target) return;
+  const willOpen = target.classList.contains("hidden");
+  document.querySelectorAll(".sort-subpanel").forEach((el) => el.classList.add("hidden"));
+  if (willOpen) target.classList.remove("hidden");
+}
+
 function renderNotes(){
   const list = $("noteList");
   list.innerHTML = "";
-  const filtered = notesState.notes.filter(noteMatchesSearch);
+
+  const filtered = notesState.notes
+    .filter(noteMatchesSearch)
+    .slice()
+    .sort(notesCompare);
+
   $("emptyNotes").classList.toggle("hidden", filtered.length > 0);
-  for (const note of filtered) {
-    const btn = document.createElement("button");
-    btn.className = `note-card ${notesState.selectedNoteId === note.id ? "active" : ""}`;
-    const date = new Date(note.updated_at).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-    btn.innerHTML = `<div class="note-card-head"><strong></strong><span>${note.is_pinned ? "📌" : ""}</span></div><p></p><small>${date}</small>`;
-    btn.querySelector("strong").textContent = note.title || "Untitled Note";
-    btn.querySelector("p").textContent = note.preview || "No content yet.";
-    btn.addEventListener("click", () => selectNote(note.id));
-    list.appendChild(btn);
+
+  renderSortChecks();
+
+  const groups = buildNoteGroups(filtered);
+
+  for (const group of groups) {
+    if (group.label) {
+      const heading = document.createElement("div");
+      heading.className = "note-group-heading";
+      heading.textContent = group.label;
+      list.appendChild(heading);
+    }
+
+    for (const note of group.notes) {
+      const btn = document.createElement("button");
+      btn.className = `note-card ${notesState.selectedNoteId === note.id ? "active" : ""}`;
+      btn.dataset.noteId = note.id;
+
+      const relative = relativeEditedTime(note.updated_at);
+      const notebookName = getNotebookName(note.notebook_id);
+
+      if (notesState.viewMode === "compact") {
+        btn.innerHTML = `
+          <div class="note-compact-row">
+            <div class="note-compact-main">
+              <strong></strong>
+              <div class="note-mini-icons">
+                ${note.is_pinned ? '<span title="Pinned">📌</span>' : ""}
+                ${note.is_favorite ? '<span title="Favorite">★</span>' : ""}
+                ${note.is_locked ? '<span title="Locked">🔒</span>' : ""}
+              </div>
+            </div>
+            <span class="note-relative-time">${relative}</span>
+          </div>
+        `;
+      } else {
+        btn.innerHTML = `
+          <div class="note-card-head">
+            <strong></strong>
+            <div class="note-mini-icons">
+              ${note.is_pinned ? '<span title="Pinned">📌</span>' : ""}
+              ${note.is_favorite ? '<span title="Favorite">★</span>' : ""}
+              ${note.is_locked ? '<span title="Locked">🔒</span>' : ""}
+            </div>
+          </div>
+          <p></p>
+          <div class="note-detail-meta">
+            <span class="note-notebook-label">▤ ${notebookName}</span>
+            <span>${relative}</span>
+          </div>
+        `;
+        btn.querySelector("p").textContent = note.preview || "No content yet.";
+      }
+
+      btn.querySelector("strong").textContent = note.title || "Untitled Note";
+      btn.addEventListener("click", () => selectNote(note.id));
+      list.appendChild(btn);
+    }
   }
+
   $("allNotesCount").textContent = notesState.totalNotesCount;
 }
 
@@ -959,6 +1178,76 @@ $("newNoteBtn")?.addEventListener("click", createNote);
 $("deleteNoteBtn")?.setAttribute("title", "Permanently delete note");
 $("deleteNoteBtn")?.addEventListener("click", deleteCurrentNote);
 $("noteSearch")?.addEventListener("input", (e) => { notesState.search = e.target.value; renderNotes(); });
+
+$("notesSortMenuBtn")?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  const popover = $("notesSortPopover");
+  const willOpen = popover.classList.contains("hidden");
+  closeSortPopover();
+  if (willOpen) {
+    renderSortChecks();
+    popover.classList.remove("hidden");
+  }
+});
+
+document.querySelectorAll("[data-sort-panel]").forEach((btn) => {
+  btn.addEventListener("click", (event) => {
+    event.stopPropagation();
+    toggleSortPanel(btn.dataset.sortPanel);
+  });
+});
+
+document.querySelectorAll("[data-order-by]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    notesState.orderBy = btn.dataset.orderBy;
+    localStorage.setItem("portalNotesOrderBy", notesState.orderBy);
+    renderNotes();
+    renderSortChecks();
+  });
+});
+
+document.querySelectorAll("[data-sort-direction]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    notesState.sortDirection = btn.dataset.sortDirection;
+    localStorage.setItem("portalNotesSortDirection", notesState.sortDirection);
+    renderNotes();
+    renderSortChecks();
+  });
+});
+
+document.querySelectorAll("[data-group-by]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    notesState.groupBy = btn.dataset.groupBy;
+    localStorage.setItem("portalNotesGroupBy", notesState.groupBy);
+    renderNotes();
+    renderSortChecks();
+  });
+});
+
+$("compactViewBtn")?.addEventListener("click", () => {
+  notesState.viewMode = "compact";
+  localStorage.setItem("portalNotesViewMode", "compact");
+  renderNotes();
+});
+
+$("detailViewBtn")?.addEventListener("click", () => {
+  notesState.viewMode = "detail";
+  localStorage.setItem("portalNotesViewMode", "detail");
+  renderNotes();
+});
+
+document.addEventListener("click", (event) => {
+  const popover = $("notesSortPopover");
+  if (
+    popover &&
+    !popover.classList.contains("hidden") &&
+    !popover.contains(event.target) &&
+    !$("notesSortMenuBtn")?.contains(event.target)
+  ) {
+    closeSortPopover();
+  }
+});
+
 $("noteTitle")?.addEventListener("input", scheduleSave);
 
 (async function init(){

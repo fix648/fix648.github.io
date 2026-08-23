@@ -148,7 +148,59 @@
             <div class="search-wrap">
               <input id="noteSearch" type="search" placeholder="Search notes..." />
             </div>
-            <div id="noteList" class="note-list"></div>
+
+            <div class="notes-list-tools">
+              <div class="notes-tool-left">
+                <button id="notesSortMenuBtn" class="notes-icon-btn" type="button" title="Group & sort" aria-label="Group and sort">
+                  <span aria-hidden="true">⇅</span>
+                </button>
+                <span id="notesSortSummary" class="notes-sort-summary">Edited · Newest</span>
+              </div>
+
+              <div class="notes-view-toggle" role="group" aria-label="Notes view">
+                <button id="compactViewBtn" class="notes-icon-btn active" type="button" title="Compact view" aria-label="Compact view">
+                  <span aria-hidden="true">☰</span>
+                </button>
+                <button id="detailViewBtn" class="notes-icon-btn" type="button" title="Detail view" aria-label="Detail view">
+                  <span aria-hidden="true">▤</span>
+                </button>
+              </div>
+            </div>
+
+            <div id="notesSortPopover" class="notes-sort-popover hidden" role="menu">
+              <div class="sort-popover-title">↕ Group &amp; sort</div>
+
+              <button class="sort-parent-row" type="button" data-sort-panel="order">
+                <span>≡</span><span>Order by</span><span class="sort-value" id="orderByValue">Date edited</span><span>›</span>
+              </button>
+              <div id="orderPanel" class="sort-subpanel hidden">
+                <button type="button" data-order-by="created_at">◷ Date created <span></span></button>
+                <button type="button" data-order-by="updated_at">✎ Date edited <span></span></button>
+                <button type="button" data-order-by="title">A Title <span></span></button>
+              </div>
+
+              <button class="sort-parent-row" type="button" data-sort-panel="direction">
+                <span>↕</span><span>Sort by</span><span class="sort-value" id="sortDirectionValue">Newest - oldest</span><span>›</span>
+              </button>
+              <div id="directionPanel" class="sort-subpanel hidden">
+                <button type="button" data-sort-direction="asc">↑ Oldest - newest <span></span></button>
+                <button type="button" data-sort-direction="desc">↓ Newest - oldest <span></span></button>
+              </div>
+
+              <button class="sort-parent-row" type="button" data-sort-panel="group">
+                <span>▦</span><span>Group by</span><span class="sort-value" id="groupByValue">Default</span><span>›</span>
+              </button>
+              <div id="groupPanel" class="sort-subpanel hidden">
+                <button type="button" data-group-by="none">None <span></span></button>
+                <button type="button" data-group-by="default">Default <span></span></button>
+                <button type="button" data-group-by="year">Year <span></span></button>
+                <button type="button" data-group-by="month">Month <span></span></button>
+                <button type="button" data-group-by="week">Week <span></span></button>
+                <button type="button" data-group-by="abc">Abc <span></span></button>
+              </div>
+            </div>
+
+            <div id="noteList" class="note-list compact-view"></div>
             <div id="emptyNotes" class="empty-state hidden">
               <strong>No notes yet</strong>
               <span>Create your first note.</span>
