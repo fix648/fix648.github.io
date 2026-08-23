@@ -934,3 +934,241 @@
     max-width:calc(100% - 44px);
   }
 }
+
+
+/* =========================================================
+   Notes v6.3 — Shared Note Actions Menu
+   ========================================================= */
+
+.note-row{
+  position:relative;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 26px;
+  align-items:stretch;
+  border-left:3px solid var(--note-accent, transparent);
+  border-radius:6px;
+}
+
+.note-row .note-card{
+  width:100%;
+  min-width:0;
+}
+
+.note-menu-button{
+  width:26px;
+  min-width:26px;
+  border:0;
+  background:transparent;
+  color:#98a2b3;
+  cursor:pointer;
+  border-radius:6px;
+  font-size:16px;
+  line-height:1;
+  display:grid;
+  place-items:center;
+  opacity:.35;
+}
+
+.note-row:hover .note-menu-button,
+.note-row.active .note-menu-button,
+.note-menu-button:focus{
+  opacity:1;
+}
+
+.note-menu-button:hover{
+  background:#eef2f7;
+  color:#344054;
+}
+
+.note-context-menu{
+  position:fixed;
+  z-index:1250;
+  width:205px;
+  background:#fff;
+  border:1px solid #dfe3ea;
+  border-radius:10px;
+  box-shadow:0 14px 34px rgba(16,24,40,.18);
+  padding:5px;
+}
+
+.note-context-menu button{
+  width:100%;
+  min-height:34px;
+  border:0;
+  background:transparent;
+  color:#344054;
+  border-radius:7px;
+  padding:0 9px;
+  display:grid;
+  grid-template-columns:23px minmax(0,1fr);
+  align-items:center;
+  text-align:left;
+  cursor:pointer;
+  font-size:11px;
+}
+
+.note-context-menu button:hover{
+  background:#f2f5f8;
+}
+
+.note-context-menu button.danger{
+  color:#b42318;
+}
+
+.note-context-menu button.danger:hover{
+  background:#fff1f0;
+}
+
+.note-menu-icon{
+  font-size:12px;
+  display:grid;
+  place-items:center;
+}
+
+.note-menu-divider{
+  height:1px;
+  background:#eaecf0;
+  margin:5px 3px;
+}
+
+.note-choice-modal{
+  max-height:min(78vh,560px);
+}
+
+.note-choice-list{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  max-height:340px;
+  overflow:auto;
+  margin-top:10px;
+}
+
+.note-choice-button{
+  width:100%;
+  min-height:39px;
+  border:1px solid transparent;
+  background:#f9fafb;
+  color:#344054;
+  border-radius:8px;
+  padding:0 10px;
+  display:grid;
+  grid-template-columns:24px minmax(0,1fr) auto;
+  align-items:center;
+  text-align:left;
+  cursor:pointer;
+  gap:6px;
+}
+
+.note-choice-button:hover{
+  border-color:#d9e4ff;
+  background:#f2f6ff;
+}
+
+.note-choice-button small{
+  color:#98a2b3;
+  font-size:9px;
+}
+
+.note-choice-icon{
+  display:grid;
+  place-items:center;
+  color:#4773da;
+}
+
+.color-palette-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px;
+  overflow:visible;
+  max-height:none;
+}
+
+.color-choice{
+  border:1px solid #e4e7ec;
+  background:#fff;
+  border-radius:8px;
+  min-height:40px;
+  padding:0 9px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  cursor:pointer;
+  color:#475467;
+}
+
+.color-choice:hover{
+  background:#f8fafc;
+  border-color:#cbd5e1;
+}
+
+.color-choice-dot{
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:var(--choice-color);
+  box-shadow:inset 0 0 0 1px rgba(15,23,42,.12);
+}
+
+.color-choice-dot.no-color{
+  background:
+    linear-gradient(45deg,transparent 44%,#ef4444 45%,#ef4444 55%,transparent 56%),
+    #fff;
+  border:1px solid #d0d5dd;
+}
+
+.dark .note-menu-button:hover{
+  background:#252b36;
+  color:#fff;
+}
+
+.dark .note-context-menu{
+  background:#1a1d22;
+  border-color:#343942;
+}
+
+.dark .note-context-menu button{
+  color:#d8dce3;
+}
+
+.dark .note-context-menu button:hover{
+  background:#252b36;
+}
+
+.dark .note-context-menu button.danger{
+  color:#ff8a80;
+}
+
+.dark .note-context-menu button.danger:hover{
+  background:#3a2020;
+}
+
+.dark .note-menu-divider{
+  background:#343942;
+}
+
+.dark .note-choice-button{
+  background:#202329;
+  color:#d8dce3;
+}
+
+.dark .note-choice-button:hover{
+  background:#252b36;
+  border-color:#3b4b68;
+}
+
+.dark .color-choice{
+  background:#202329;
+  border-color:#343942;
+  color:#d8dce3;
+}
+
+.dark .color-choice:hover{
+  background:#252b36;
+}
+
+@media(max-width:900px){
+  .note-menu-button{
+    opacity:1;
+  }
+}

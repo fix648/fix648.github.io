@@ -147,6 +147,13 @@ function ensureUiLayers(){
     menu.innerHTML = notebookActionMenuHtml();
     document.body.appendChild(menu);
   }
+
+  if (!$("noteContextMenu")) {
+    const menu = document.createElement("div");
+    menu.id = "noteContextMenu";
+    menu.className = "note-context-menu hidden";
+    document.body.appendChild(menu);
+  }
 }
 
 function hideNotebookContextMenu(){
@@ -428,12 +435,22 @@ async function handleNotebookContextAction(action, nb){
 }
 
 document.addEventListener("click", (event) => {
-  const menu = $("notebookContextMenu");
-  if (menu && !menu.contains(event.target)) hideNotebookContextMenu();
+  const notebookMenu = $("notebookContextMenu");
+  if (notebookMenu && !notebookMenu.contains(event.target)) hideNotebookContextMenu();
+
+  const noteMenu = $("noteContextMenu");
+  if (noteMenu && !noteMenu.contains(event.target)) hideNoteContextMenu();
 });
 
-window.addEventListener("resize", hideNotebookContextMenu);
-window.addEventListener("scroll", hideNotebookContextMenu, true);
+window.addEventListener("resize", () => {
+  hideNotebookContextMenu();
+  hideNoteContextMenu();
+});
+
+window.addEventListener("scroll", () => {
+  hideNotebookContextMenu();
+  hideNoteContextMenu();
+}, true);
 
 function ensureEditorNotebookSelector(){
   let select = $("noteNotebookSelect");
@@ -725,6 +742,307 @@ async function createNotebook(){
   await centeredMessage("Notebook Created", `"${name}" was created.`);
 }
 
+
+function hideNoteContextMenu(){
+  $("noteContextMenu")?.classList.add("hidden");
+}
+
+function noteActionMenuItems(note){
+  return [
+    { id: "pin", icon: note.is_pinned ? "📌" : "📍", label: note.is_pinned ? "Unpin" : "Pin", group: 1 },
+    { id: "favorite", icon: note.is_favorite ? "★" : "☆", label: note.is_favorite ? "Remove Favorite" : "Favorite", group: 1 },
+
+    { id: "move", icon: "▤", label: "Move to Notebook", group: 2 },
+    { id: "color", icon: "◉", label: "Assign Color", group: 2 },
+    { id: "duplicate", icon: "⧉", label: "Duplicate", group: 2 },
+
+    { id: "trash", icon: "🗑", label: "Move to Trash", group: 3, danger: true },
+  ];
+}
+
+function noteActionMenuHtml(note){
+  const items = noteActionMenuItems(note);
+  let lastGroup = null;
+  return items.map((item) => {
+    const divider = lastGroup !== null && item.group !== lastGroup
+      ? '<div class="note-menu-divider"></div>'
+      : "";
+    lastGroup = item.group;
+
+    return `${divider}
+      <button data-note-action="${item.id}" class="${item.danger ? "danger" : ""}">
+        <span class="note-menu-icon" aria-hidden="true">${item.icon}</span>
+        <span>${item.label}</span>
+      </button>`;
+  }).join("");
+}
+
+function positionFloatingMenu(menu, x, y, width = 205, height = 250){
+  menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - width - 8))}px`;
+  menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - height - 8))}px`;
+}
+
+function showNoteContextMenuAt(x, y, note){
+  ensureUiLayers();
+  hideNotebookContextMenu();
+
+  const menu = $("noteContextMenu");
+  menu.dataset.noteId = note.id;
+  menu.innerHTML = noteActionMenuHtml(note);
+  positionFloatingMenu(menu, x, y);
+  menu.classList.remove("hidden");
+}
+
+function showNoteDotsMenu(button, note){
+  const rect = button.getBoundingClientRect();
+  showNoteContextMenuAt(rect.right - 205, rect.bottom + 5, note);
+}
+
+function centeredChoiceModal({
+  title,
+  message = "",
+  choices = [],
+  cancelText = "Cancel",
+  variant = "list",
+}){
+  return new Promise((resolve) => {
+    const overlay = document.createElement("div");
+    overlay.className = "portal-modal-overlay";
+    overlay.innerHTML = `
+      <div class="portal-modal note-choice-modal" role="dialog" aria-modal="true">
+        <h3></h3>
+        <p class="portal-modal-message ${message ? "" : "hidden"}"></p>
+        <div class="note-choice-list ${variant === "palette" ? "color-palette-grid" : ""}"></div>
+        <div class="portal-modal-actions">
+          <button type="button" class="portal-modal-btn secondary note-choice-cancel">${cancelText}</button>
+        </div>
+      </div>
+    `;
+
+    overlay.querySelector("h3").textContent = title;
+    overlay.querySelector(".portal-modal-message").textContent = message;
+
+    const list = overlay.querySelector(".note-choice-list");
+    for (const choice of choices) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = variant === "palette" ? "color-choice" : "note-choice-button";
+      button.dataset.value = choice.value;
+      button.title = choice.label || choice.value;
+
+      if (variant === "palette") {
+        if (choice.value) {
+          button.style.setProperty("--choice-color", choice.value);
+          button.innerHTML = `<span class="color-choice-dot"></span><span>${choice.label}</span>`;
+        } else {
+          button.innerHTML = `<span class="color-choice-dot no-color"></span><span>${choice.label}</span>`;
+        }
+      } else {
+        button.innerHTML = `
+          <span class="note-choice-icon">${choice.icon || "▤"}</span>
+          <span>${choice.label}</span>
+          ${choice.meta ? `<small>${choice.meta}</small>` : ""}
+        `;
+      }
+
+      button.addEventListener("click", () => finish(choice.value));
+      list.appendChild(button);
+    }
+
+    const finish = (value) => {
+      overlay.remove();
+      resolve(value);
+    };
+
+    overlay.querySelector(".note-choice-cancel").addEventListener("click", () => finish(null));
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) finish(null);
+    });
+
+    document.body.appendChild(overlay);
+    const first = list.querySelector("button");
+    setTimeout(() => first?.focus(), 0);
+  });
+}
+
+async function updateNoteActionFields(noteId, patch){
+  const { data, error } = await client
+    .from("notes")
+    .update(patch)
+    .eq("id", noteId)
+    .select("id,notebook_id,title,content,preview,is_pinned,is_favorite,is_locked,color,updated_at,created_at")
+    .single();
+
+  if (error) {
+    showNotesError(error.message);
+    return null;
+  }
+
+  return data;
+}
+
+async function refreshNotesAfterAction(preferredNoteId = null){
+  await loadNoteCounts();
+  await loadNotes();
+  renderNotebooks();
+
+  if (preferredNoteId) {
+    const stillVisible = notesState.notes.some((note) => note.id === preferredNoteId);
+    if (stillVisible) {
+      await selectNote(preferredNoteId);
+      return;
+    }
+  }
+
+  if (notesState.selectedNoteId && !notesState.notes.some((note) => note.id === notesState.selectedNoteId)) {
+    notesState.selectedNoteId = null;
+    clearEditorSelection();
+  }
+}
+
+async function toggleNotePin(note){
+  const updated = await updateNoteActionFields(note.id, { is_pinned: !note.is_pinned });
+  if (!updated) return;
+  await refreshNotesAfterAction(note.id);
+}
+
+async function toggleNoteFavorite(note){
+  const updated = await updateNoteActionFields(note.id, { is_favorite: !note.is_favorite });
+  if (!updated) return;
+  await refreshNotesAfterAction(note.id);
+}
+
+async function moveNoteFromAction(note){
+  const choices = notesState.notebooks.map((nb) => ({
+    value: nb.id,
+    label: nb.name,
+    icon: nb.id === note.notebook_id ? "✓" : "▤",
+    meta: nb.id === note.notebook_id ? "Current" : "",
+  }));
+
+  const targetId = await centeredChoiceModal({
+    title: "Move to Notebook",
+    message: "Choose the destination notebook.",
+    choices,
+  });
+
+  if (!targetId || targetId === note.notebook_id) return;
+
+  const updated = await updateNoteActionFields(note.id, { notebook_id: targetId });
+  if (!updated) return;
+
+  await refreshNotesAfterAction(
+    notesState.selectedNotebookId === "all" || notesState.selectedNotebookId === targetId
+      ? note.id
+      : null
+  );
+
+  await centeredMessage(
+    "Note Moved",
+    `Moved to "${getNotebookName(targetId)}".`
+  );
+}
+
+async function assignNoteColor(note){
+  const palette = [
+    { value: "", label: "No color" },
+    { value: "#ef4444", label: "Red" },
+    { value: "#f97316", label: "Orange" },
+    { value: "#eab308", label: "Yellow" },
+    { value: "#22c55e", label: "Green" },
+    { value: "#06b6d4", label: "Cyan" },
+    { value: "#3b82f6", label: "Blue" },
+    { value: "#8b5cf6", label: "Violet" },
+    { value: "#ec4899", label: "Pink" },
+    { value: "#64748b", label: "Slate" },
+  ];
+
+  const color = await centeredChoiceModal({
+    title: "Assign Color",
+    message: "Choose a color for this note.",
+    choices: palette,
+    variant: "palette",
+  });
+
+  if (color === null) return;
+
+  const updated = await updateNoteActionFields(note.id, { color: color || null });
+  if (!updated) return;
+  await refreshNotesAfterAction(note.id);
+}
+
+async function duplicateNote(note){
+  const user = await getCurrentUser();
+  const baseTitle = note.title || "Untitled Note";
+  const newTitle = `${baseTitle} — Copy`;
+
+  const { data, error } = await client
+    .from("notes")
+    .insert({
+      user_id: user.id,
+      notebook_id: note.notebook_id,
+      title: newTitle,
+      content: note.content || emptyDoc,
+      preview: note.preview || "",
+      is_pinned: false,
+      is_favorite: false,
+      color: note.color || null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    showNotesError(error.message);
+    return;
+  }
+
+  await refreshNotesAfterAction(data.id);
+  await centeredMessage("Note Duplicated", `"${newTitle}" was created.`);
+}
+
+async function moveNoteToTrash(note){
+  const confirmed = await centeredModal({
+    title: "Move to Trash",
+    message: `Move "${note.title || "Untitled Note"}" to Trash?`,
+    confirmText: "Move to Trash",
+    destructive: true,
+  });
+
+  if (!confirmed) return;
+
+  const { error } = await client
+    .from("notes")
+    .update({
+      is_deleted: true,
+      trashed_at: new Date().toISOString(),
+    })
+    .eq("id", note.id);
+
+  if (error) {
+    showNotesError(error.message);
+    return;
+  }
+
+  if (notesState.selectedNoteId === note.id) {
+    notesState.selectedNoteId = null;
+    clearEditorSelection();
+  }
+
+  await refreshNotesAfterAction();
+  await centeredMessage("Moved to Trash", "The note is now in Trash.");
+}
+
+async function handleNoteAction(action, note){
+  hideNoteContextMenu();
+
+  if (action === "pin") return toggleNotePin(note);
+  if (action === "favorite") return toggleNoteFavorite(note);
+  if (action === "move") return moveNoteFromAction(note);
+  if (action === "color") return assignNoteColor(note);
+  if (action === "duplicate") return duplicateNote(note);
+  if (action === "trash") return moveNoteToTrash(note);
+}
+
 function noteMatchesSearch(note){
   const q = notesState.search.toLowerCase().trim();
   if (!q) return true;
@@ -915,9 +1233,21 @@ function renderNotes(){
     }
 
     for (const note of group.notes) {
+      const row = document.createElement("div");
+      row.className = `note-row ${notesState.selectedNoteId === note.id ? "active" : ""}`;
+      row.dataset.noteId = note.id;
+      if (note.color) row.style.setProperty("--note-accent", note.color);
+
       const btn = document.createElement("button");
       btn.className = `note-card ${notesState.selectedNoteId === note.id ? "active" : ""}`;
       btn.dataset.noteId = note.id;
+
+      const dots = document.createElement("button");
+      dots.type = "button";
+      dots.className = "note-menu-button";
+      dots.title = "Note menu";
+      dots.setAttribute("aria-label", "Note menu");
+      dots.textContent = "⋮";
 
       const relative = relativeEditedTime(note.updated_at);
       const notebookName = getNotebookName(note.notebook_id);
@@ -956,8 +1286,23 @@ function renderNotes(){
       }
 
       btn.querySelector("strong").textContent = note.title || "Untitled Note";
+
       btn.addEventListener("click", () => selectNote(note.id));
-      list.appendChild(btn);
+      btn.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        showNoteContextMenuAt(event.clientX, event.clientY, note);
+      });
+
+      dots.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        showNoteDotsMenu(dots, note);
+      });
+
+      row.appendChild(btn);
+      row.appendChild(dots);
+      list.appendChild(row);
     }
   }
 
@@ -1399,6 +1744,19 @@ document.querySelector('[data-notebook="all"]')?.addEventListener("click", async
   await loadNotes();
   renderNotebooks();
   clearEditorSelection();
+});
+
+ensureUiLayers();
+
+$("noteContextMenu")?.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-note-action]");
+  if (!button) return;
+
+  const noteId = $("noteContextMenu").dataset.noteId;
+  const note = notesState.notes.find((item) => item.id === noteId);
+  if (!note) return hideNoteContextMenu();
+
+  await handleNoteAction(button.dataset.noteAction, note);
 });
 
 ensureUiLayers();
