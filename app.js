@@ -117,6 +117,293 @@ function showNotesError(message){
   el.classList.remove("hidden");
 }
 
+function ensureUiLayers(){
+  if (!$("portalModalOverlay")) {
+    const overlay = document.createElement("div");
+    overlay.id = "portalModalOverlay";
+    overlay.className = "portal-modal-overlay hidden";
+    overlay.innerHTML = `
+      <div class="portal-modal" role="dialog" aria-modal="true" aria-labelledby="portalModalTitle">
+        <h3 id="portalModalTitle"></h3>
+        <p id="portalModalMessage" class="portal-modal-message hidden"></p>
+        <input id="portalModalInput" class="portal-modal-input hidden" />
+        <div class="portal-modal-actions">
+          <button id="portalModalCancel" class="portal-modal-btn secondary">Cancel</button>
+          <button id="portalModalConfirm" class="portal-modal-btn primary">OK</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+  }
+
+  if (!$("notebookContextMenu")) {
+    const menu = document.createElement("div");
+    menu.id = "notebookContextMenu";
+    menu.className = "notebook-context-menu hidden";
+    menu.innerHTML = `
+      <button data-action="rename">Rename</button>
+      <button data-action="delete" class="danger">Delete</button>
+    `;
+    document.body.appendChild(menu);
+  }
+}
+
+function hideNotebookContextMenu(){
+  $("notebookContextMenu")?.classList.add("hidden");
+}
+
+function showNotebookContextMenu(event, nb){
+  ensureUiLayers();
+  event.preventDefault();
+  event.stopPropagation();
+
+  const menu = $("notebookContextMenu");
+  menu.dataset.notebookId = nb.id;
+  menu.style.left = `${Math.min(event.clientX, window.innerWidth - 180)}px`;
+  menu.style.top = `${Math.min(event.clientY, window.innerHeight - 110)}px`;
+  menu.classList.remove("hidden");
+}
+
+function centeredModal({
+  title,
+  message = "",
+  inputValue = null,
+  inputPlaceholder = "",
+  confirmText = "OK",
+  cancelText = "Cancel",
+  destructive = false,
+  showCancel = true,
+}){
+  ensureUiLayers();
+
+  return new Promise((resolve) => {
+    const overlay = $("portalModalOverlay");
+    const titleEl = $("portalModalTitle");
+    const messageEl = $("portalModalMessage");
+    const input = $("portalModalInput");
+    const confirmBtn = $("portalModalConfirm");
+    const cancelBtn = $("portalModalCancel");
+
+    titleEl.textContent = title || "";
+    messageEl.textContent = message || "";
+    messageEl.classList.toggle("hidden", !message);
+
+    const hasInput = inputValue !== null;
+    input.classList.toggle("hidden", !hasInput);
+    if (hasInput) {
+      input.value = inputValue ?? "";
+      input.placeholder = inputPlaceholder || "";
+    }
+
+    confirmBtn.textContent = confirmText;
+    confirmBtn.classList.toggle("danger", destructive);
+    confirmBtn.classList.toggle("primary", !destructive);
+
+    cancelBtn.textContent = cancelText;
+    cancelBtn.classList.toggle("hidden", !showCancel);
+
+    overlay.classList.remove("hidden");
+
+    const finish = (value) => {
+      overlay.classList.add("hidden");
+      confirmBtn.onclick = null;
+      cancelBtn.onclick = null;
+      overlay.onclick = null;
+      input.onkeydown = null;
+      resolve(value);
+    };
+
+    confirmBtn.onclick = () => finish(hasInput ? input.value.trim() : true);
+    cancelBtn.onclick = () => finish(null);
+    overlay.onclick = (e) => {
+      if (e.target === overlay && showCancel) finish(null);
+    };
+    input.onkeydown = (e) => {
+      if (e.key === "Enter") finish(input.value.trim());
+      if (e.key === "Escape" && showCancel) finish(null);
+    };
+
+    setTimeout(() => {
+      if (hasInput) {
+        input.focus();
+        input.select();
+      } else {
+        confirmBtn.focus();
+      }
+    }, 0);
+  });
+}
+
+async function centeredMessage(title, message){
+  await centeredModal({
+    title,
+    message,
+    confirmText: "OK",
+    showCancel: false,
+  });
+}
+
+async function getSafeFallbackNotebook(excludeNotebookId){
+  let fallback = notesState.notebooks.find(
+    (item) =>
+      item.id !== excludeNotebookId &&
+      item.name.trim().toLowerCase() === "personal"
+  );
+
+  if (!fallback) {
+    fallback = notesState.notebooks.find((item) => item.id !== excludeNotebookId);
+  }
+
+  if (fallback) return fallback;
+
+  const user = await getCurrentUser();
+  const { data, error } = await client
+    .from("notebooks")
+    .insert({
+      user_id: user.id,
+      name: "Personal",
+      icon: "folder",
+      sort_order: 0,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  notesState.notebooks.push(data);
+  return data;
+}
+
+async function renameNotebook(nb){
+  const name = await centeredModal({
+    title: "Rename Notebook",
+    message: "Enter a new notebook name.",
+    inputValue: nb.name,
+    confirmText: "Rename",
+  });
+
+  if (!name || name === nb.name) return;
+
+  const duplicate = notesState.notebooks.some(
+    (item) =>
+      item.id !== nb.id &&
+      item.name.trim().toLowerCase() === name.toLowerCase()
+  );
+
+  if (duplicate) {
+    await centeredMessage(
+      "Duplicate Notebook",
+      `A notebook named "${name}" already exists.`
+    );
+    return;
+  }
+
+  const { error } = await client
+    .from("notebooks")
+    .update({ name })
+    .eq("id", nb.id);
+
+  if (error) {
+    if (
+      error.code === "23505" ||
+      String(error.message || "").toLowerCase().includes("duplicate")
+    ) {
+      await centeredMessage(
+        "Duplicate Notebook",
+        `A notebook named "${name}" already exists.`
+      );
+      return;
+    }
+    return showNotesError(error.message);
+  }
+
+  await loadNotebooks();
+  renderNotebooks();
+
+  const currentNote = notesState.notes.find(
+    (n) => n.id === notesState.selectedNoteId
+  );
+  if (currentNote) renderEditorNotebookSelector(currentNote);
+
+  await centeredMessage("Renamed", `Notebook renamed to "${name}".`);
+}
+
+async function deleteNotebookSafely(nb){
+  const noteCount = notesState.notebookCounts[nb.id] || 0;
+
+  const confirmed = await centeredModal({
+    title: "Delete Notebook",
+    message:
+      noteCount > 0
+        ? `"${nb.name}" contains ${noteCount} note(s). The notes will be moved safely before the notebook is deleted.`
+        : `Delete empty notebook "${nb.name}"?`,
+    confirmText: "Delete",
+    destructive: true,
+  });
+
+  if (!confirmed) return;
+
+  let fallback = null;
+
+  if (noteCount > 0) {
+    try {
+      fallback = await getSafeFallbackNotebook(nb.id);
+    } catch (error) {
+      return showNotesError(error.message || "Could not prepare a safe notebook.");
+    }
+
+    const { error: moveError } = await client
+      .from("notes")
+      .update({ notebook_id: fallback.id })
+      .eq("notebook_id", nb.id);
+
+    if (moveError) {
+      await centeredMessage(
+        "Delete Cancelled",
+        "The notes could not be moved safely, so the notebook was not deleted."
+      );
+      return;
+    }
+  }
+
+  const { error } = await client
+    .from("notebooks")
+    .delete()
+    .eq("id", nb.id);
+
+  if (error) return showNotesError(error.message);
+
+  if (notesState.selectedNotebookId === nb.id) {
+    notesState.selectedNotebookId = fallback?.id || "all";
+  }
+
+  await loadNotebooks();
+  await loadNoteCounts();
+  await loadNotes();
+  renderNotebooks();
+  clearEditorSelection();
+
+  await centeredMessage(
+    "Notebook Deleted",
+    noteCount > 0 && fallback
+      ? `Notebook deleted. ${noteCount} note(s) were moved to "${fallback.name}".`
+      : "Notebook deleted."
+  );
+}
+
+async function handleNotebookContextAction(action, nb){
+  hideNotebookContextMenu();
+  if (action === "rename") return renameNotebook(nb);
+  if (action === "delete") return deleteNotebookSafely(nb);
+}
+
+document.addEventListener("click", (event) => {
+  const menu = $("notebookContextMenu");
+  if (menu && !menu.contains(event.target)) hideNotebookContextMenu();
+});
+
+window.addEventListener("resize", hideNotebookContextMenu);
+window.addEventListener("scroll", hideNotebookContextMenu, true);
+
 function ensureEditorNotebookSelector(){
   let select = $("noteNotebookSelect");
   if (select) return select;
@@ -300,19 +587,27 @@ function renderNotebooks(){
         <span class="notebook-name"></span>
         <span class="notebook-count"></span>
       </button>
-      <button class="notebook-menu" title="Notebook options">⋮</button>
     `;
     row.querySelector(".notebook-name").textContent = nb.name;
     const nbCount = notesState.notebookCounts[nb.id] || 0;
     row.querySelector(".notebook-count").textContent = nbCount;
-    row.querySelector(".notebook-item").addEventListener("click", async () => {
+
+    const notebookButton = row.querySelector(".notebook-item");
+
+    notebookButton.addEventListener("click", async () => {
       notesState.selectedNotebookId = nb.id;
       notesState.selectedNoteId = null;
       await loadNotes();
       renderNotebooks();
       clearEditorSelection();
     });
-    row.querySelector(".notebook-menu").addEventListener("click", () => notebookMenu(nb));
+
+    notebookButton.addEventListener("contextmenu", (event) => {
+      notesState.selectedNotebookId = nb.id;
+      renderNotebooks();
+      showNotebookContextMenu(event, nb);
+    });
+
     list.appendChild(row);
   }
   document.querySelector('[data-notebook="all"]').classList.toggle("active", notesState.selectedNotebookId === "all");
@@ -320,82 +615,23 @@ function renderNotebooks(){
 }
 
 async function notebookMenu(nb){
-  const action = prompt(
-    `Notebook: ${nb.name}\n\nType R = Rename\nType D = Delete notebook`
-  );
-  if (!action) return;
-
-  const choice = action.trim().toLowerCase();
-
-  if (choice === "r") {
-    const name = prompt("New notebook name:", nb.name)?.trim();
-    if (!name || name === nb.name) return;
-
-    const duplicate = notesState.notebooks.some(
-      (item) => item.id !== nb.id && item.name.trim().toLowerCase() === name.toLowerCase()
-    );
-    if (duplicate) {
-      alert(`A notebook named "${name}" already exists.`);
-      return;
-    }
-
-    const { error } = await client
-      .from("notebooks")
-      .update({ name })
-      .eq("id", nb.id);
-
-    if (error) return showNotesError(error.message);
-
-    await loadNotebooks();
-    renderNotebooks();
-
-    const currentNote = notesState.notes.find((n) => n.id === notesState.selectedNoteId);
-    if (currentNote) renderEditorNotebookSelector(currentNote);
-    return;
-  }
-
-  if (choice === "d") {
-    const noteCount = notesState.notebookCounts[nb.id] || 0;
-    const message = noteCount > 0
-      ? `Delete notebook "${nb.name}"?\n\n${noteCount} note(s) inside it will NOT be deleted. They will remain safely available in All Notes.`
-      : `Delete empty notebook "${nb.name}"?`;
-
-    if (!confirm(message)) return;
-
-    const { error } = await client
-      .from("notebooks")
-      .delete()
-      .eq("id", nb.id);
-
-    if (error) return showNotesError(error.message);
-
-    if (notesState.selectedNotebookId === nb.id) {
-      notesState.selectedNotebookId = "all";
-    }
-
-    await loadNotebooks();
-    await loadNoteCounts();
-    await loadNotes();
-    renderNotebooks();
-
-    if (notesState.selectedNoteId) {
-      const currentNote = notesState.notes.find((n) => n.id === notesState.selectedNoteId);
-      if (currentNote) {
-        selectNote(currentNote.id);
-      } else {
-        clearEditorSelection();
-      }
-    } else {
-      clearEditorSelection();
-    }
-    return;
-  }
-
-  alert('Please type only "R" for Rename or "D" for Delete.');
+  const action = await centeredModal({
+    title: nb.name,
+    message: "Choose an action.",
+    confirmText: "Rename",
+  });
+  if (action) return renameNotebook(nb);
 }
 
 async function createNotebook(){
-  const name = prompt("Notebook name:")?.trim();
+  const name = await centeredModal({
+    title: "New Notebook",
+    message: "Enter a notebook name.",
+    inputValue: "",
+    inputPlaceholder: "Notebook name",
+    confirmText: "Create",
+  });
+
   if (!name) return;
 
   const normalizedName = name.toLowerCase();
@@ -405,7 +641,10 @@ async function createNotebook(){
   );
 
   if (duplicate) {
-    alert(`A notebook named "${name}" already exists.`);
+    await centeredMessage(
+      "Duplicate Notebook",
+      `A notebook named "${name}" already exists.`
+    );
     return;
   }
 
@@ -423,7 +662,10 @@ async function createNotebook(){
       error.code === "23505" ||
       String(error.message || "").toLowerCase().includes("duplicate")
     ) {
-      alert(`A notebook named "${name}" already exists.`);
+      await centeredMessage(
+        "Duplicate Notebook",
+        `A notebook named "${name}" already exists.`
+      );
       return;
     }
     return showNotesError(error.message);
@@ -434,6 +676,8 @@ async function createNotebook(){
   await loadNoteCounts();
   await loadNotes();
   renderNotebooks();
+
+  await centeredMessage("Notebook Created", `"${name}" was created.`);
 }
 
 function noteMatchesSearch(note){
@@ -655,6 +899,19 @@ document.querySelector('[data-notebook="all"]')?.addEventListener("click", async
   renderNotebooks();
   clearEditorSelection();
 });
+
+ensureUiLayers();
+$("notebookContextMenu")?.addEventListener("click", async (event) => {
+  const button = event.target.closest("button[data-action]");
+  if (!button) return;
+
+  const notebookId = $("notebookContextMenu").dataset.notebookId;
+  const nb = notesState.notebooks.find((item) => item.id === notebookId);
+  if (!nb) return hideNotebookContextMenu();
+
+  await handleNotebookContextAction(button.dataset.action, nb);
+});
+
 $("newNotebookBtn")?.addEventListener("click", createNotebook);
 $("newNotebookBottom")?.addEventListener("click", createNotebook);
 $("newNoteBtn")?.addEventListener("click", createNote);

@@ -8,3 +8,118 @@
 @media(max-width:1150px){.notes-shell{grid-template-columns:220px 280px minmax(420px,1fr)}}
 @media(max-width:900px){.notes-shell{grid-template-columns:220px 1fr}.editor-pane{grid-column:1/-1;border-top:1px solid #e7e9ee}.notebook-pane,.note-list-pane{min-height:420px}.editor-pane,.editor-wrap,.editor-empty{min-height:560px}}
 @media(max-width:800px){aside{width:70px;padding:20px 8px}.brand span,nav button,.bottom button{font-size:0}.brand{text-align:center}.brand:first-letter{font-size:22px}nav button:before{content:'•';font-size:20px}main{margin-left:70px;padding:20px}.grid{grid-template-columns:1fr}.panels{grid-template-columns:1fr}.hero{align-items:flex-start;gap:15px;flex-direction:column}.auth-card{padding:24px}.notes-shell{display:block}.notebook-pane,.note-list-pane{border-right:0;border-bottom:1px solid #e7e9ee}.note-list{max-height:400px}}
+
+
+/* Notes v4.5 — right-click notebook menu + centered modal */
+.notebook-row{display:block}
+.notebook-context-menu{
+  position:fixed;
+  z-index:1200;
+  min-width:160px;
+  background:#fff;
+  border:1px solid #dfe3ea;
+  border-radius:10px;
+  box-shadow:0 14px 34px rgba(16,24,40,.16);
+  padding:6px;
+}
+.notebook-context-menu button{
+  width:100%;
+  border:0;
+  background:transparent;
+  border-radius:7px;
+  padding:9px 10px;
+  text-align:left;
+  cursor:pointer;
+  color:#303744;
+}
+.notebook-context-menu button:hover{background:#f2f5fa}
+.notebook-context-menu button.danger{color:#b42318}
+.notebook-context-menu button.danger:hover{background:#fff1f0}
+
+.portal-modal-overlay{
+  position:fixed;
+  inset:0;
+  z-index:1300;
+  display:grid;
+  place-items:center;
+  padding:20px;
+  background:rgba(15,23,42,.34);
+  backdrop-filter:blur(2px);
+}
+.portal-modal{
+  width:min(92vw,420px);
+  background:#fff;
+  border:1px solid #e1e5eb;
+  border-radius:14px;
+  box-shadow:0 24px 64px rgba(15,23,42,.22);
+  padding:22px;
+}
+.portal-modal h3{
+  margin:0 0 9px;
+  font-size:18px;
+  color:#17191d;
+}
+.portal-modal-message{
+  margin:0 0 16px;
+  color:#667085;
+  font-size:13px;
+  line-height:1.55;
+}
+.portal-modal-input{
+  width:100%;
+  height:42px;
+  border:1px solid #d9dde5;
+  border-radius:9px;
+  padding:0 11px;
+  outline:none;
+  font:inherit;
+  color:#17191d;
+  background:#fff;
+}
+.portal-modal-input:focus{
+  border-color:#78a0ff;
+  box-shadow:0 0 0 3px rgba(49,111,246,.08);
+}
+.portal-modal-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:18px;
+}
+.portal-modal-btn{
+  min-width:86px;
+  min-height:38px;
+  border-radius:8px;
+  padding:0 14px;
+  cursor:pointer;
+  font-weight:650;
+}
+.portal-modal-btn.secondary{
+  border:1px solid #dfe3ea;
+  background:#fff;
+  color:#414956;
+}
+.portal-modal-btn.primary{
+  border:0;
+  background:#2864e8;
+  color:#fff;
+}
+.portal-modal-btn.danger{
+  border:0;
+  background:#d92d20;
+  color:#fff;
+}
+
+.dark .notebook-context-menu,
+.dark .portal-modal{
+  background:#1a1d22;
+  border-color:#343942;
+}
+.dark .notebook-context-menu button,
+.dark .portal-modal h3,
+.dark .portal-modal-input{color:#e9ebef}
+.dark .notebook-context-menu button:hover{background:#252b36}
+.dark .notebook-context-menu button.danger:hover{background:#3a2020}
+.dark .portal-modal-message{color:#a8aeb8}
+.dark .portal-modal-input{background:#1a1d22;border-color:#343942}
+.dark .portal-modal-btn.secondary{background:#1a1d22;border-color:#343942;color:#e9ebef}
