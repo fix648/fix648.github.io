@@ -992,18 +992,32 @@ function updateEditorPlaceholder(){
 }
 
 async function initTiptap(){
-  if (notesState.editorReady) return;
-  $("saveStatus").textContent = "Loading editor...";
+  if (notesState.editorReady) return notesState.editor;
+  if (notesState.editorLoadingPromise) return notesState.editorLoadingPromise;
 
-  try {
-    const core = await import("https://esm.sh/@tiptap/core@3.29.2");
-    const starter = await import("https://esm.sh/@tiptap/starter-kit@3.29.2");
-    const underlineModule = await import("https://esm.sh/@tiptap/extension-underline@3.29.2");
-    const linkModule = await import("https://esm.sh/@tiptap/extension-link@3.29.2");
-    const colorModule = await import("https://esm.sh/@tiptap/extension-color@3.29.2");
-    const textStyleModule = await import("https://esm.sh/@tiptap/extension-text-style@3.29.2");
-    const highlightModule = await import("https://esm.sh/@tiptap/extension-highlight@3.29.2");
-    const textAlignModule = await import("https://esm.sh/@tiptap/extension-text-align@3.29.2");
+  notesState.editorLoadingPromise = (async () => {
+    $("saveStatus").textContent = "Loading editor...";
+
+    try {
+    const [
+      core,
+      starter,
+      underlineModule,
+      linkModule,
+      colorModule,
+      textStyleModule,
+      highlightModule,
+      textAlignModule,
+    ] = await Promise.all([
+      import("https://esm.sh/@tiptap/core@3.29.2"),
+      import("https://esm.sh/@tiptap/starter-kit@3.29.2"),
+      import("https://esm.sh/@tiptap/extension-underline@3.29.2"),
+      import("https://esm.sh/@tiptap/extension-link@3.29.2"),
+      import("https://esm.sh/@tiptap/extension-color@3.29.2"),
+      import("https://esm.sh/@tiptap/extension-text-style@3.29.2"),
+      import("https://esm.sh/@tiptap/extension-highlight@3.29.2"),
+      import("https://esm.sh/@tiptap/extension-text-align@3.29.2"),
+    ]);
 
     const Editor = core.Editor;
     const Extension = core.Extension;
@@ -1117,10 +1131,18 @@ async function initTiptap(){
     bindAdvancedToolbarControls();
     updateEditorPlaceholder();
     $("saveStatus").textContent = "Saved";
-  } catch (error) {
-    console.error(error);
-    showNotesError("The rich-text editor could not load. Check your internet connection and refresh.");
-  }
+    } catch (error) {
+      console.error(error);
+      showNotesError("The rich-text editor could not load. Check your internet connection and refresh.");
+      throw error;
+    } finally {
+      notesState.editorLoadingPromise = null;
+    }
+
+    return notesState.editor;
+  })();
+
+  return notesState.editorLoadingPromise;
 }
 
 function bindToolbar(){
@@ -1336,11 +1358,31 @@ function updateWordCount(){
 async function openNotes(){
   showPortalView("notes");
   showNotesError("");
+
   try {
-    await loadNotebooks();
-    await loadNoteCounts();
-    await loadNotes();
+    // Render database-backed panes as soon as possible.
+    await Promise.all([
+      loadNotebooks(),
+      loadNoteCounts(),
+      loadNotes(),
+    ]);
+
     renderNotebooks();
+    renderNotes();
+
+    // Warm the editor after the Notes UI is already usable.
+    // This prevents the first Note click from waiting on all Tiptap modules.
+    const warmEditor = () => {
+      if (!notesState.editorReady) {
+        initTiptap().catch((error) => console.error("EDITOR_PRELOAD_ERROR", error));
+      }
+    };
+
+    if ("requestIdleCallback" in window) {
+      requestIdleCallback(warmEditor, { timeout: 1200 });
+    } else {
+      setTimeout(warmEditor, 50);
+    }
   } catch (error) {
     console.error(error);
     showNotesError(error.message || "Notes could not be loaded. Make sure the Notes database setup has been completed.");

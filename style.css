@@ -862,3 +862,75 @@
     max-width:none;
   }
 }
+
+
+/* =========================================================
+   Notes v6.2.2 — Performance + Editor spacing hotfix
+   ========================================================= */
+
+/* Do not center a narrow 900px document inside a very wide editor.
+   Start writing close to the editor edge, similar to desktop note apps. */
+.editor-surface > .tiptap-editor,
+#editor .tiptap-editor{
+  max-width:none !important;
+  width:100%;
+  margin:0 !important;
+  padding:24px 32px 56px !important;
+  min-height:100% !important;
+}
+
+/* The first editable line starts exactly at the content top. */
+.tiptap-editor > p:first-child,
+.tiptap-editor > h1:first-child,
+.tiptap-editor > h2:first-child,
+.tiptap-editor > h3:first-child{
+  margin-top:0 !important;
+}
+
+/* Placeholder uses exactly the same origin as the editor caret. */
+.editor-placeholder{
+  top:24px !important;
+  left:32px !important;
+  width:auto !important;
+  max-width:calc(100% - 64px);
+  transform:none !important;
+  padding:0 !important;
+  margin:0 !important;
+  font-size:15px !important;
+  line-height:1.78 !important;
+}
+
+/* Keep toolbar / pane geometry stable while fonts and marks change. */
+.tiptap-host{
+  contain:layout paint;
+  overflow:auto !important;
+}
+
+.editor-surface{
+  width:100%;
+  min-width:0;
+}
+
+@media(max-width:1280px){
+  .editor-surface > .tiptap-editor,
+  #editor .tiptap-editor{
+    padding:22px 28px 52px !important;
+  }
+  .editor-placeholder{
+    top:22px !important;
+    left:28px !important;
+    max-width:calc(100% - 56px);
+  }
+}
+
+@media(max-width:900px){
+  .editor-surface > .tiptap-editor,
+  #editor .tiptap-editor{
+    padding:20px 22px 48px !important;
+  }
+  .editor-placeholder{
+    top:20px !important;
+    left:22px !important;
+    max-width:calc(100% - 44px);
+  }
+}
