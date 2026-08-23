@@ -983,6 +983,14 @@ async function createNote(){
   await selectNote(data.id);
 }
 
+function updateEditorPlaceholder(){
+  const placeholder = $("editorPlaceholder");
+  const editor = notesState.editor;
+  if (!placeholder || !editor) return;
+
+  placeholder.classList.toggle("hidden", !editor.isEmpty);
+}
+
 async function initTiptap(){
   if (notesState.editorReady) return;
   $("saveStatus").textContent = "Loading editor...";
@@ -996,7 +1004,6 @@ async function initTiptap(){
     const textStyleModule = await import("https://esm.sh/@tiptap/extension-text-style@3.29.2");
     const highlightModule = await import("https://esm.sh/@tiptap/extension-highlight@3.29.2");
     const textAlignModule = await import("https://esm.sh/@tiptap/extension-text-align@3.29.2");
-    const placeholderModule = await import("https://esm.sh/@tiptap/extension-placeholder@3.29.2");
 
     const Editor = core.Editor;
     const Extension = core.Extension;
@@ -1007,7 +1014,6 @@ async function initTiptap(){
     const TextStyle = textStyleModule.default || textStyleModule.TextStyle;
     const Highlight = highlightModule.default || highlightModule.Highlight;
     const TextAlign = textAlignModule.default || textAlignModule.TextAlign;
-    const Placeholder = placeholderModule.default || placeholderModule.Placeholder;
 
     const FontFamily = Extension.create({
       name: "fontFamily",
@@ -1084,10 +1090,6 @@ async function initTiptap(){
           types: ["heading", "paragraph"],
           alignments: ["left", "center", "right", "justify"],
         }),
-        Placeholder.configure({
-          placeholder: "Capture your thoughts!",
-          showOnlyWhenEditable: true,
-        }),
         FontFamily,
         FontSize,
       ],
@@ -1100,15 +1102,20 @@ async function initTiptap(){
       },
       onUpdate: () => {
         updateWordCount();
+        updateEditorPlaceholder();
         scheduleSave();
       },
       onSelectionUpdate: updateToolbarState,
-      onTransaction: updateToolbarState,
+      onTransaction: () => {
+        updateToolbarState();
+        updateEditorPlaceholder();
+      },
     });
 
     notesState.editorReady = true;
     bindToolbar();
     bindAdvancedToolbarControls();
+    updateEditorPlaceholder();
     $("saveStatus").textContent = "Saved";
   } catch (error) {
     console.error(error);
@@ -1254,6 +1261,7 @@ async function selectNote(id){
   renderEditorNotebookSelector(note);
   notesState.editor.commands.setContent(note.content || emptyDoc);
   updateWordCount();
+  updateEditorPlaceholder();
   $("lastUpdated").textContent = `Last updated ${new Date(note.updated_at).toLocaleString()}`;
   $("saveStatus").textContent = "Saved";
 }

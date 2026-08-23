@@ -756,3 +756,109 @@
     max-width:62px;
   }
 }
+
+
+/* =========================================================
+   Notes v6.2.1 — Editor stability + single placeholder hotfix
+   ========================================================= */
+
+/* Keep the entire editor pane at a stable viewport height.
+   Formatting actions now scroll inside the editor instead of growing the page. */
+.editor-pane{
+  height:calc(100vh - 128px);
+  min-height:560px;
+  overflow:hidden;
+}
+
+.editor-wrap{
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+
+.editor-header,
+.editor-toolbar,
+.editor-footer{
+  flex:0 0 auto;
+}
+
+.tiptap-host{
+  position:relative;
+  flex:1 1 auto;
+  min-height:0 !important;
+  height:auto;
+  overflow:auto;
+  background:#fff;
+}
+
+.editor-surface{
+  min-height:100%;
+}
+
+.editor-surface > .tiptap-editor,
+#editor .tiptap-editor{
+  box-sizing:border-box;
+  min-height:100% !important;
+  height:auto !important;
+  max-width:900px;
+  margin:0 auto;
+  padding:28px 46px 60px;
+}
+
+/* Disable the old extension-based pseudo placeholders completely. */
+.tiptap-editor p.is-editor-empty:first-child::before,
+.tiptap-editor .is-editor-empty::before,
+.tiptap-editor .is-empty::before{
+  content:none !important;
+  display:none !important;
+}
+
+/* Exactly one placeholder, controlled by editor.isEmpty in app.js. */
+.editor-placeholder{
+  position:absolute;
+  z-index:2;
+  top:28px;
+  left:50%;
+  width:min(900px, calc(100% - 92px));
+  transform:translateX(-50%);
+  padding:0;
+  color:#b5bbc5;
+  font-size:13px;
+  line-height:1.6;
+  font-style:italic;
+  pointer-events:none;
+  user-select:none;
+}
+
+.dark .tiptap-host{
+  background:#17191d;
+}
+
+.dark .editor-placeholder{
+  color:#646c78;
+}
+
+@media(max-width:1280px){
+  .editor-surface > .tiptap-editor,
+  #editor .tiptap-editor{
+    padding:24px 34px 54px;
+  }
+
+  .editor-placeholder{
+    top:24px;
+    width:calc(100% - 68px);
+  }
+}
+
+@media(max-width:900px){
+  .editor-pane{
+    height:620px;
+    min-height:520px;
+  }
+  .editor-surface > .tiptap-editor,
+  #editor .tiptap-editor{
+    max-width:none;
+  }
+}
