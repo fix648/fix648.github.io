@@ -369,51 +369,32 @@ async function deleteNotebookSafely(nb){
   const noteCount = notesState.notebookCounts[nb.id] || 0;
 
   const confirmed = await centeredModal({
-    title: "Delete Notebook",
+    title: "Move Notebook to Trash",
     message:
       noteCount > 0
-        ? `"${nb.name}" contains ${noteCount} note(s). The notes will be moved safely before the notebook is deleted.`
-        : `Delete empty notebook "${nb.name}"?`,
-    confirmText: "Delete",
+        ? `"${nb.name}" contains ${noteCount} note(s). The notebook will move to Trash. Its notes will stay attached and will return with the notebook if restored.`
+        : `Move empty notebook "${nb.name}" to Trash?`,
+    confirmText: "Move to Trash",
     destructive: true,
   });
 
   if (!confirmed) return;
 
-  let fallback = null;
-
-  if (noteCount > 0) {
-    try {
-      fallback = await getSafeFallbackNotebook(nb.id);
-    } catch (error) {
-      return showNotesError(error.message || "Could not prepare a safe notebook.");
-    }
-
-    const { error: moveError } = await client
-      .from("notes")
-      .update({ notebook_id: fallback.id })
-      .eq("notebook_id", nb.id);
-
-    if (moveError) {
-      await centeredMessage(
-        "Delete Cancelled",
-        "The notes could not be moved safely, so the notebook was not deleted."
-      );
-      return;
-    }
-  }
-
   const { error } = await client
     .from("notebooks")
-    .delete()
+    .update({
+      is_deleted: true,
+      trashed_at: new Date().toISOString(),
+    })
     .eq("id", nb.id);
 
   if (error) return showNotesError(error.message);
 
   if (notesState.selectedNotebookId === nb.id) {
-    notesState.selectedNotebookId = fallback?.id || "all";
+    notesState.selectedNotebookId = "all";
   }
 
+  notesState.selectedNoteId = null;
   await loadNotebooks();
   await loadNoteCounts();
   await loadNotes();
@@ -421,10 +402,8 @@ async function deleteNotebookSafely(nb){
   clearEditorSelection();
 
   await centeredMessage(
-    "Notebook Deleted",
-    noteCount > 0 && fallback
-      ? `Notebook deleted. ${noteCount} note(s) were moved to "${fallback.name}".`
-      : "Notebook deleted."
+    "Moved to Trash",
+    `"${nb.name}" is now in Trash.`
   );
 }
 
@@ -1853,6 +1832,7 @@ function updateWordCount(){
 async function openNotes(){
   showPortalView("notes");
   showNotesError("");
+  bindTrashButton();
 
   try {
     // Render database-backed panes as soon as possible.
