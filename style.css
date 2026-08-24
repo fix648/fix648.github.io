@@ -2098,3 +2098,49 @@
   background:#3a2020 !important;
   border-color:#5b2a28 !important;
 }
+
+/* Notes v6.9 */
+body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-context-menu{
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
+.tiptap-editor{
+  font-family:monospace !important;
+  font-size:13px !important;
+  line-height:normal !important;
+}
+.editor-toolbar{
+  min-height:40px !important;
+  padding:4px 7px !important;
+  gap:3px !important;
+  background:#fff !important;
+}
+.toolbar-group{gap:1px !important}
+.toolbar-divider{height:20px !important;margin:0 2px !important}
+.editor-toolbar .tool-icon{
+  width:28px !important;min-width:28px !important;height:28px !important;
+  border-radius:5px !important;font-size:12px !important;
+}
+.tool-insert{color:#0a8f55 !important;font-size:18px !important;font-weight:700 !important}
+.toolbar-select{
+  height:28px !important;min-width:102px !important;max-width:128px !important;
+  padding:0 22px 0 7px !important;font-size:10.5px !important;border-radius:5px !important;
+}
+.toolbar-size-select{min-width:58px !important;max-width:62px !important}
+.color-tool{width:28px !important;height:28px !important;border-radius:5px !important}
+
+.trash-view-btn{
+  width:calc(100% - 12px) !important;min-height:28px !important;margin:4px 6px !important;
+  padding:0 8px !important;gap:6px !important;display:flex !important;
+  align-items:center !important;justify-content:center !important;
+  border:1px solid #e5e7eb !important;border-radius:7px !important;
+  background:#f8f9fb !important;color:#ef4444 !important;
+  font-size:11px !important;font-weight:650 !important;
+}
+.trash-nav-icon{
+  width:12px !important;height:12px !important;fill:none !important;stroke:#ef4444 !important;
+  stroke-width:1.7 !important;stroke-linecap:round;stroke-linejoin:round;
+}
+.trash-view-btn:hover{background:#fff3f4 !important;border-color:#fecaca !important;color:#dc2626 !important}
+.dark .editor-toolbar{background:#17191d !important}
+.dark .trash-view-btn{background:#202329 !important;border-color:#343942 !important;color:#ff7a7a !important}
+.dark .trash-nav-icon{stroke:#ff7a7a !important}

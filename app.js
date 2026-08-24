@@ -1964,6 +1964,7 @@ async function initTiptap(){
         attributes: {
           class: "tiptap-editor",
           spellcheck: "true",
+          style: "font-family: monospace; font-size: 13px; line-height: normal;",
         },
       },
       onUpdate: () => {
@@ -2019,7 +2020,7 @@ function bindToolbar(){
       else if (cmd === "alignRight") chain.setTextAlign("right").run();
       else if (cmd === "alignJustify") chain.setTextAlign("justify").run();
       else if (cmd === "clearFormatting") {
-        chain.unsetAllMarks().clearNodes().setTextAlign("left").run();
+        chain.unsetAllMarks().clearNodes().setTextAlign("left").setFontFamily("monospace").setFontSize("13px").run();
       }
       else if (cmd === "link") {
         const previousUrl = e.getAttributes("link").href || "";
@@ -2106,10 +2107,10 @@ function updateToolbarState(){
 
   const attrs = e.getAttributes("textStyle") || {};
   if ($("fontFamilySelect")) {
-    $("fontFamilySelect").value = attrs.fontFamily || "";
+    $("fontFamilySelect").value = attrs.fontFamily || "monospace";
   }
   if ($("fontSizeSelect")) {
-    $("fontSizeSelect").value = attrs.fontSize || "";
+    $("fontSizeSelect").value = attrs.fontSize || "13px";
   }
 
   const color = attrs.color;
