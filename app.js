@@ -160,15 +160,44 @@ function hideNotebookContextMenu(){
   $("notebookContextMenu")?.classList.add("hidden");
 }
 
+
+const PORTAL_NOTEBOOK_COLORS = [
+  { value: "", label: "No color" },
+  { value: "#ef4444", label: "Red" },
+  { value: "#f97316", label: "Orange" },
+  { value: "#eab308", label: "Yellow" },
+  { value: "#84cc16", label: "Lime" },
+  { value: "#22c55e", label: "Green" },
+  { value: "#14b8a6", label: "Teal" },
+  { value: "#06b6d4", label: "Cyan" },
+  { value: "#0ea5e9", label: "Sky" },
+  { value: "#3b82f6", label: "Blue" },
+  { value: "#6366f1", label: "Indigo" },
+  { value: "#8b5cf6", label: "Violet" },
+  { value: "#a855f7", label: "Purple" },
+  { value: "#d946ef", label: "Fuchsia" },
+  { value: "#ec4899", label: "Pink" },
+  { value: "#f43f5e", label: "Rose" },
+  { value: "#64748b", label: "Slate" },
+  { value: "#78716c", label: "Stone" },
+];
+
+function notebookColorFor(note){
+  return notesState.notebooks.find((nb) => nb.id === note.notebook_id)?.color || "";
+}
+
 const NOTEBOOK_ACTIONS = [
-  { id: "rename", label: "Rename", danger: false },
-  { id: "delete", label: "Delete", danger: true },
+  { id: "rename", label: "Rename", icon: "✎", danger: false },
+  { id: "color", label: "Assign Color", icon: "◉", danger: false },
+  { id: "delete", label: "Move to Trash", icon: "🗑", danger: true },
 ];
 
 function notebookActionMenuHtml(){
   return NOTEBOOK_ACTIONS.map((item) => `
     <button data-action="${item.id}" class="${item.danger ? "danger" : ""}">
-      ${item.label}
+      <span class="notebook-menu-icon">${item.icon || ""}</span>
+      <span>${item.label}</span>
+      ${item.id === "color" ? '<span class="menu-chevron">›</span>' : ""}
     </button>
   `).join("");
 }
@@ -407,9 +436,33 @@ async function deleteNotebookSafely(nb){
   );
 }
 
+
+async function assignNotebookColor(nb){
+  const color = await centeredChoiceModal({
+    title: "Assign Notebook Color",
+    message: "This color will also be used for titles of notes inside this notebook.",
+    choices: PORTAL_NOTEBOOK_COLORS,
+    variant: "palette",
+  });
+  if (color === null) return;
+
+  const { error } = await client
+    .from("notebooks")
+    .update({ color: color || null })
+    .eq("id", nb.id);
+
+  if (error) return showNotesError(error.message);
+
+  await loadNotebooks();
+  await loadNotes();
+  renderNotebooks();
+  renderNotes();
+}
+
 async function handleNotebookContextAction(action, nb){
   hideNotebookContextMenu();
   if (action === "rename") return renameNotebook(nb);
+  if (action === "color") return assignNotebookColor(nb);
   if (action === "delete") return deleteNotebookSafely(nb);
 }
 
@@ -551,8 +604,9 @@ async function ensureDefaultNotebook(){
 async function loadNotebooks(){
   const user = await getCurrentUser();
   const { data, error } = await client.from("notebooks")
-    .select("id,name,icon,sort_order,created_at,updated_at")
+    .select("id,name,icon,sort_order,color,is_favorite,is_locked,is_deleted,trashed_at,created_at,updated_at")
     .eq("user_id", user.id)
+    .eq("is_deleted", false)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: true });
   if (error) throw error;
@@ -617,6 +671,10 @@ function renderNotebooks(){
       <button class="notebook-menu" title="Notebook menu" aria-label="Notebook menu">⋮</button>
     `;
     row.querySelector(".notebook-name").textContent = nb.name;
+    if (nb.color) {
+      row.querySelector(".notebook-icon").style.color = nb.color;
+      row.querySelector(".notebook-name").style.color = nb.color;
+    }
     const nbCount = notesState.notebookCounts[nb.id] || 0;
     row.querySelector(".notebook-count").textContent = nbCount;
 
@@ -724,6 +782,7 @@ async function createNotebook(){
 
 function hideNoteContextMenu(){
   $("noteContextMenu")?.classList.add("hidden");
+  removeNoteSubmenu();
 }
 
 function noteActionMenuItems(note){
@@ -731,8 +790,8 @@ function noteActionMenuItems(note){
     { id: "pin", icon: note.is_pinned ? "📌" : "📍", label: note.is_pinned ? "Unpin" : "Pin", group: 1 },
     { id: "favorite", icon: note.is_favorite ? "★" : "☆", label: note.is_favorite ? "Remove Favorite" : "Favorite", group: 1 },
 
-    { id: "move", icon: "▤", label: "Move to Notebook", group: 2 },
-    { id: "color", icon: "◉", label: "Assign Color", group: 2 },
+    { id: "move", icon: "▤", label: "Move to Notebook", group: 2, submenu: true },
+    { id: "color", icon: "◉", label: "Assign Color", group: 2, submenu: true },
     { id: "duplicate", icon: "⧉", label: "Duplicate", group: 2 },
 
     { id: "trash", icon: "🗑", label: "Move to Trash", group: 3, danger: true },
@@ -752,6 +811,7 @@ function noteActionMenuHtml(note){
       <button data-note-action="${item.id}" class="${item.danger ? "danger" : ""}">
         <span class="note-menu-icon" aria-hidden="true">${item.icon}</span>
         <span>${item.label}</span>
+        ${item.submenu ? '<span class="menu-chevron">›</span>' : ""}
       </button>`;
   }).join("");
 }
@@ -759,6 +819,84 @@ function noteActionMenuHtml(note){
 function positionFloatingMenu(menu, x, y, width = 205, height = 250){
   menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - width - 8))}px`;
   menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - height - 8))}px`;
+}
+
+
+function removeNoteSubmenu(){
+  document.querySelectorAll(".note-action-submenu").forEach((el) => el.remove());
+}
+
+function showNoteActionSubmenu(parentButton, note, type){
+  removeNoteSubmenu();
+
+  const submenu = document.createElement("div");
+  submenu.className = `note-action-submenu ${type === "color" ? "color-submenu" : ""}`;
+
+  if (type === "move") {
+    for (const nb of notesState.notebooks) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "submenu-row";
+      const current = nb.id === note.notebook_id;
+      button.innerHTML = `
+        <span class="submenu-icon" style="${nb.color ? `color:${nb.color}` : ""}">▤</span>
+        <span class="submenu-label"></span>
+        <span class="submenu-check">${current ? "✓" : ""}</span>
+      `;
+      button.querySelector(".submenu-label").textContent = nb.name;
+      button.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        if (!current) {
+          const updated = await updateNoteActionFields(note.id, { notebook_id: nb.id });
+          if (updated) {
+            removeNoteSubmenu();
+            hideNoteContextMenu();
+            await refreshNotesAfterAction(
+              notesState.selectedNotebookId === "all" || notesState.selectedNotebookId === nb.id
+                ? note.id : null
+            );
+          }
+        } else {
+          removeNoteSubmenu();
+          hideNoteContextMenu();
+        }
+      });
+      submenu.appendChild(button);
+    }
+  } else {
+    for (const choice of PORTAL_NOTEBOOK_COLORS) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "submenu-color-row";
+      button.innerHTML = `
+        <span class="submenu-color-dot ${choice.value ? "" : "none"}"
+              style="${choice.value ? `--submenu-color:${choice.value}` : ""}"></span>
+        <span>${choice.label}</span>
+        <span class="submenu-check">${(note.color || "") === choice.value ? "✓" : ""}</span>
+      `;
+      button.addEventListener("click", async (event) => {
+        event.stopPropagation();
+        const updated = await updateNoteActionFields(note.id, { color: choice.value || null });
+        if (updated) {
+          removeNoteSubmenu();
+          hideNoteContextMenu();
+          await refreshNotesAfterAction(note.id);
+        }
+      });
+      submenu.appendChild(button);
+    }
+  }
+
+  document.body.appendChild(submenu);
+  const rect = parentButton.getBoundingClientRect();
+  const width = type === "color" ? 190 : 220;
+  const height = Math.min(submenu.scrollHeight || 360, window.innerHeight - 16);
+  let left = rect.right + 4;
+  if (left + width > window.innerWidth - 8) left = rect.left - width - 4;
+  let top = Math.min(rect.top, window.innerHeight - height - 8);
+  submenu.style.left = `${Math.max(8, left)}px`;
+  submenu.style.top = `${Math.max(8, top)}px`;
+  submenu.style.width = `${width}px`;
 }
 
 function showNoteContextMenuAt(x, y, note){
@@ -1035,13 +1173,16 @@ async function openTrashView(){
   hideNoteContextMenu();
   hideNotebookContextMenu();
 
-  const [{ data: deletedNotes, error: notesError }, { data: deletedNotebooks, error: notebooksError }] = await Promise.all([
+  const [
+    { data: deletedNotes, error: notesError },
+    { data: deletedNotebooks, error: notebooksError }
+  ] = await Promise.all([
     client.from("notes")
       .select("id,notebook_id,title,preview,trashed_at,updated_at")
       .eq("is_deleted", true)
       .order("trashed_at", { ascending: false }),
     client.from("notebooks")
-      .select("id,name,trashed_at")
+      .select("id,name,trashed_at,color")
       .eq("is_deleted", true)
       .order("trashed_at", { ascending: false })
   ]);
@@ -1051,114 +1192,258 @@ async function openTrashView(){
     return;
   }
 
+  const notes = deletedNotes || [];
+  const notebooks = deletedNotebooks || [];
+  const isEmpty = notes.length === 0 && notebooks.length === 0;
+
   const overlay = document.createElement("div");
   overlay.className = "portal-modal-overlay trash-overlay";
   overlay.innerHTML = `
-    <div class="portal-modal trash-modal" role="dialog" aria-modal="true">
+    <div class="portal-modal trash-modal ${isEmpty ? "trash-modal-empty" : "trash-modal-filled"}" role="dialog" aria-modal="true">
       <div class="trash-head">
         <div>
           <div class="trash-kicker">PERSONAL NOTES</div>
           <h3>Trash</h3>
+          <p class="trash-help">Restore an item or permanently delete it.</p>
         </div>
         <button class="trash-close" type="button" aria-label="Close">×</button>
       </div>
-      <p class="trash-help">Restore an item or permanently delete it.</p>
-      <div class="trash-sections">
-        <section>
-          <h4>Notes <span>${deletedNotes?.length || 0}</span></h4>
-          <div class="trash-list" data-trash-notes></div>
-        </section>
-        <section>
-          <h4>Notebooks <span>${deletedNotebooks?.length || 0}</span></h4>
-          <div class="trash-list" data-trash-notebooks></div>
-        </section>
-      </div>
+
+      ${isEmpty ? `
+        <div class="trash-empty-state">
+          <div class="trash-empty-illustration" aria-hidden="true">
+            <div class="trash-empty-bin">🗑</div>
+          </div>
+          <strong>Trash is empty</strong>
+          <span>Deleted notes and notebooks will appear here.</span>
+        </div>
+      ` : `
+        <div class="trash-sections">
+          <section class="trash-section">
+            <div class="trash-section-title">
+              <div class="trash-section-title-left">
+                <span class="trash-section-icon">📝</span>
+                <h4>Notes</h4>
+                <span class="trash-count">${notes.length}</span>
+              </div>
+            </div>
+            <div class="trash-list" data-trash-notes></div>
+          </section>
+
+          <section class="trash-section">
+            <div class="trash-section-title">
+              <div class="trash-section-title-left">
+                <span class="trash-section-icon">📓</span>
+                <h4>Notebooks</h4>
+                <span class="trash-count">${notebooks.length}</span>
+              </div>
+            </div>
+            <div class="trash-list" data-trash-notebooks></div>
+          </section>
+        </div>
+      `}
     </div>`;
 
   const close = () => overlay.remove();
   overlay.querySelector(".trash-close").onclick = close;
-  overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+  overlay.addEventListener("click", (event) => {
+    if (event.target === overlay) close();
+  });
 
-  const notesList = overlay.querySelector("[data-trash-notes]");
-  const notebooksList = overlay.querySelector("[data-trash-notebooks]");
+  if (!isEmpty) {
+    const notesList = overlay.querySelector("[data-trash-notes]");
+    const notebooksList = overlay.querySelector("[data-trash-notebooks]");
 
-  const empty = (container) => {
-    container.innerHTML = `<div class="trash-empty">Trash is empty.</div>`;
-  };
+    const relativeDeletedTime = (value) => {
+      if (!value) return "Deleted recently";
+      const diff = Math.max(0, Date.now() - new Date(value).getTime());
+      const mins = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
 
-  if (!deletedNotes?.length) empty(notesList);
-  for (const note of deletedNotes || []) {
-    const row = document.createElement("div");
-    row.className = "trash-row";
-    row.innerHTML = `
-      <div class="trash-item-main"><span class="trash-icon">📝</span><div><strong></strong><small>Note</small></div></div>
-      <div class="trash-actions">
-        <button data-restore>↩ Restore</button>
-        <button class="danger" data-delete>🗑 Delete forever</button>
-      </div>`;
-    row.querySelector("strong").textContent = note.title || "Untitled Note";
-
-    row.querySelector("[data-restore]").onclick = async () => {
-      const { error } = await client.from("notes").update({is_deleted:false, trashed_at:null}).eq("id", note.id);
-      if (error) return showNotesError(error.message);
-      row.remove();
-      await refreshNotesAfterAction();
-      await centeredMessage("Note Restored", "The note was restored.");
+      if (mins < 1) return "Deleted just now";
+      if (mins < 60) return `Deleted ${mins} min ago`;
+      if (hours < 24) return `Deleted ${hours} hour${hours === 1 ? "" : "s"} ago`;
+      if (days === 1) return "Deleted yesterday";
+      return `Deleted ${days} days ago`;
     };
 
-    row.querySelector("[data-delete]").onclick = async () => {
-      const ok = await centeredModal({
-        title:"Permanently Delete Note",
-        message:`Permanently delete "${note.title || "Untitled Note"}"? This cannot be undone.`,
-        confirmText:"Delete Forever",
-        destructive:true
-      });
-      if (!ok) return;
-      const { error } = await client.from("notes").delete().eq("id", note.id);
-      if (error) return showNotesError(error.message);
-      row.remove();
-    };
-    notesList.appendChild(row);
-  }
-
-  if (!deletedNotebooks?.length) empty(notebooksList);
-  for (const notebook of deletedNotebooks || []) {
-    const row = document.createElement("div");
-    row.className = "trash-row";
-    row.innerHTML = `
-      <div class="trash-item-main"><span class="trash-icon">📓</span><div><strong></strong><small>Notebook</small></div></div>
-      <div class="trash-actions">
-        <button data-restore>↩ Restore</button>
-        <button class="danger" data-delete>🗑 Delete forever</button>
-      </div>`;
-    row.querySelector("strong").textContent = notebook.name;
-
-    row.querySelector("[data-restore]").onclick = async () => {
-      const { error } = await client.from("notebooks").update({is_deleted:false, trashed_at:null}).eq("id", notebook.id);
-      if (error) return showNotesError(error.message);
-      row.remove();
-      await loadNotebooks();
-      renderNotebooks();
-      await centeredMessage("Notebook Restored", `"${notebook.name}" was restored.`);
+    const renderCompactEmpty = (container, label) => {
+      container.innerHTML = `
+        <div class="trash-column-empty">
+          <span>${label}</span>
+        </div>`;
     };
 
-    row.querySelector("[data-delete]").onclick = async () => {
-      const ok = await centeredModal({
-        title:"Permanently Delete Notebook",
-        message:`Permanently delete "${notebook.name}" and its linked notes? This cannot be undone.`,
-        confirmText:"Delete Forever",
-        destructive:true
-      });
-      if (!ok) return;
+    if (!notes.length) {
+      renderCompactEmpty(notesList, "No deleted notes.");
+    }
 
-      const { error: noteDeleteError } = await client.from("notes").delete().eq("notebook_id", notebook.id);
-      if (noteDeleteError) return showNotesError(noteDeleteError.message);
+    for (const note of notes) {
+      const row = document.createElement("div");
+      row.className = "trash-row";
+      row.innerHTML = `
+        <div class="trash-item-main">
+          <div class="trash-item-icon note-icon">📝</div>
+          <div class="trash-item-copy">
+            <strong></strong>
+            <small></small>
+          </div>
+        </div>
 
-      const { error } = await client.from("notebooks").delete().eq("id", notebook.id);
-      if (error) return showNotesError(error.message);
-      row.remove();
-    };
-    notebooksList.appendChild(row);
+        <div class="trash-actions">
+          <button class="restore-action" data-restore title="Restore">
+            <span class="trash-action-icon">↶</span>
+            <span>Restore</span>
+          </button>
+          <div class="trash-action-divider"></div>
+          <button class="delete-action" data-delete title="Delete permanently">
+            <span class="trash-action-icon">🗑</span>
+            <span>Delete</span>
+          </button>
+        </div>`;
+
+      row.querySelector("strong").textContent = note.title || "Untitled Note";
+      row.querySelector("small").textContent = relativeDeletedTime(note.trashed_at);
+
+      row.querySelector("[data-restore]").onclick = async () => {
+        const { error } = await client
+          .from("notes")
+          .update({ is_deleted: false, trashed_at: null })
+          .eq("id", note.id);
+
+        if (error) return showNotesError(error.message);
+
+        row.remove();
+        await refreshNotesAfterAction();
+
+        const remainingNotes = notesList.querySelectorAll(".trash-row").length;
+        if (!remainingNotes) {
+          renderCompactEmpty(notesList, "No deleted notes.");
+        }
+
+        await centeredMessage("Note Restored", "The note was restored.");
+      };
+
+      row.querySelector("[data-delete]").onclick = async () => {
+        const ok = await centeredModal({
+          title: "Permanently Delete Note",
+          message: `Permanently delete "${note.title || "Untitled Note"}"? This cannot be undone.`,
+          confirmText: "Delete Forever",
+          destructive: true
+        });
+
+        if (!ok) return;
+
+        const { error } = await client
+          .from("notes")
+          .delete()
+          .eq("id", note.id);
+
+        if (error) return showNotesError(error.message);
+
+        row.remove();
+
+        const remainingNotes = notesList.querySelectorAll(".trash-row").length;
+        if (!remainingNotes) {
+          renderCompactEmpty(notesList, "No deleted notes.");
+        }
+      };
+
+      notesList.appendChild(row);
+    }
+
+    if (!notebooks.length) {
+      renderCompactEmpty(notebooksList, "No deleted notebooks.");
+    }
+
+    for (const notebook of notebooks) {
+      const row = document.createElement("div");
+      row.className = "trash-row";
+      row.innerHTML = `
+        <div class="trash-item-main">
+          <div class="trash-item-icon notebook-icon">📓</div>
+          <div class="trash-item-copy">
+            <strong></strong>
+            <small></small>
+          </div>
+        </div>
+
+        <div class="trash-actions">
+          <button class="restore-action" data-restore title="Restore">
+            <span class="trash-action-icon">↶</span>
+            <span>Restore</span>
+          </button>
+          <div class="trash-action-divider"></div>
+          <button class="delete-action" data-delete title="Delete permanently">
+            <span class="trash-action-icon">🗑</span>
+            <span>Delete</span>
+          </button>
+        </div>`;
+
+      row.querySelector("strong").textContent = notebook.name;
+      row.querySelector("small").textContent = relativeDeletedTime(notebook.trashed_at);
+
+      if (notebook.color) {
+        row.querySelector(".trash-item-icon").style.color = notebook.color;
+      }
+
+      row.querySelector("[data-restore]").onclick = async () => {
+        const { error } = await client
+          .from("notebooks")
+          .update({ is_deleted: false, trashed_at: null })
+          .eq("id", notebook.id);
+
+        if (error) return showNotesError(error.message);
+
+        row.remove();
+        await loadNotebooks();
+        await loadNotes();
+        renderNotebooks();
+        renderNotes();
+
+        const remainingNotebooks = notebooksList.querySelectorAll(".trash-row").length;
+        if (!remainingNotebooks) {
+          renderCompactEmpty(notebooksList, "No deleted notebooks.");
+        }
+
+        await centeredMessage("Notebook Restored", `"${notebook.name}" was restored.`);
+      };
+
+      row.querySelector("[data-delete]").onclick = async () => {
+        const ok = await centeredModal({
+          title: "Permanently Delete Notebook",
+          message: `Permanently delete "${notebook.name}" and its linked notes? This cannot be undone.`,
+          confirmText: "Delete Forever",
+          destructive: true
+        });
+
+        if (!ok) return;
+
+        const { error: noteDeleteError } = await client
+          .from("notes")
+          .delete()
+          .eq("notebook_id", notebook.id);
+
+        if (noteDeleteError) return showNotesError(noteDeleteError.message);
+
+        const { error } = await client
+          .from("notebooks")
+          .delete()
+          .eq("id", notebook.id);
+
+        if (error) return showNotesError(error.message);
+
+        row.remove();
+
+        const remainingNotebooks = notebooksList.querySelectorAll(".trash-row").length;
+        if (!remainingNotebooks) {
+          renderCompactEmpty(notebooksList, "No deleted notebooks.");
+        }
+      };
+
+      notebooksList.appendChild(row);
+    }
   }
 
   document.body.appendChild(overlay);
@@ -1415,6 +1700,10 @@ function renderNotes(){
       }
 
       btn.querySelector("strong").textContent = note.title || "Untitled Note";
+      const inheritedNotebookColor = notebookColorFor(note);
+      if (inheritedNotebookColor) {
+        btn.querySelector("strong").style.color = inheritedNotebookColor;
+      }
 
       btn.addEventListener("click", () => selectNote(note.id));
       btn.addEventListener("contextmenu", (event) => {
@@ -1886,6 +2175,12 @@ $("noteContextMenu")?.addEventListener("click", async (event) => {
   const noteId = $("noteContextMenu").dataset.noteId;
   const note = notesState.notes.find((item) => item.id === noteId);
   if (!note) return hideNoteContextMenu();
+
+  if (button.dataset.noteAction === "move" || button.dataset.noteAction === "color") {
+    event.stopPropagation();
+    showNoteActionSubmenu(button, note, button.dataset.noteAction);
+    return;
+  }
 
   await handleNoteAction(button.dataset.noteAction, note);
 });
