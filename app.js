@@ -1552,6 +1552,8 @@ function relativeEditedTime(dateValue){
 }
 
 function notesCompare(a, b){
+  if (notesState.orderBy === "off" || notesState.sortDirection === "off") return 0;
+
   const direction = notesState.sortDirection === "asc" ? 1 : -1;
 
   if (notesState.orderBy === "title") {
@@ -1594,6 +1596,8 @@ function groupLabelForNote(note){
       return date.toLocaleDateString(undefined, { month: "long", year: "numeric" });
     case "week":
       return weekKey(basis);
+    case "notebook":
+      return getNotebookName(note.notebook_id);
     case "abc": {
       const first = (note.title || "#").trim().charAt(0).toUpperCase();
       return /[A-Z0-9]/.test(first) ? first : "#";
@@ -1620,8 +1624,8 @@ function buildNoteGroups(notes){
   if (notesState.groupBy === "default") {
     const order = ["PINNED", "RECENT", "LAST WEEK", "OLDER"];
     entries.sort((a, b) => order.indexOf(a[0]) - order.indexOf(b[0]));
-  } else if (notesState.groupBy === "abc") {
-    entries.sort((a, b) => a[0].localeCompare(b[0]));
+  } else if (notesState.groupBy === "abc" || notesState.groupBy === "notebook") {
+    entries.sort((a, b) => a[0].localeCompare(b[0], undefined, { sensitivity: "base" }));
   } else {
     entries.sort((a, b) => b[0].localeCompare(a[0]));
   }
@@ -1646,11 +1650,13 @@ function renderSortChecks(){
   });
 
   const orderLabels = {
+    off: "Off",
     created_at: "Date created",
     updated_at: "Date edited",
     title: "Title",
   };
   const directionLabels = {
+    off: "Off",
     asc: notesState.orderBy === "title" ? "A - Z" : "Oldest - newest",
     desc: notesState.orderBy === "title" ? "Z - A" : "Newest - oldest",
   };
@@ -1660,6 +1666,7 @@ function renderSortChecks(){
     year: "Year",
     month: "Month",
     week: "Week",
+    notebook: "Notebook",
     abc: "Abc",
   };
 
@@ -1667,8 +1674,12 @@ function renderSortChecks(){
   $("sortDirectionValue").textContent = directionLabels[notesState.sortDirection];
   $("groupByValue").textContent = groupLabels[notesState.groupBy];
 
+  const orderText = orderLabels[notesState.orderBy] || "Off";
+  const directionText = directionLabels[notesState.sortDirection] || "Off";
   $("notesSortSummary").textContent =
-    `${orderLabels[notesState.orderBy].replace("Date ", "")} · ${directionLabels[notesState.sortDirection]}`;
+    notesState.orderBy === "off" && notesState.sortDirection === "off"
+      ? "Manual"
+      : `${orderText.replace("Date ", "")} · ${directionText}`;
 
   $("compactViewBtn").classList.toggle("active", notesState.viewMode === "compact");
   $("detailViewBtn").classList.toggle("active", notesState.viewMode === "detail");

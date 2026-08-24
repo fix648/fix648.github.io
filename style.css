@@ -1901,3 +1901,56 @@
   border-color:#5b2a28 !important;
   background:#38201f !important;
 }
+
+
+/* Notes v6.7 — modal stacking fix */
+.trash-overlay{
+  z-index:1400 !important;
+}
+.portal-modal-overlay:not(.trash-overlay){
+  z-index:1600 !important;
+}
+
+
+/* Notes v6.7 — more compact Group & Sort menu */
+.notes-sort-popover{
+  width:220px !important;
+  padding:4px !important;
+  border-radius:8px !important;
+}
+.sort-popover-title{
+  padding:6px 7px 5px !important;
+  font-size:10.5px !important;
+}
+.sort-parent-row{
+  min-height:29px !important;
+  grid-template-columns:17px 1fr auto 10px !important;
+  gap:4px !important;
+  padding:0 6px !important;
+  font-size:10px !important;
+}
+.sort-value{
+  font-size:8.5px !important;
+  max-width:78px !important;
+}
+.sort-subpanel{
+  margin:1px 3px 3px 20px !important;
+  padding-left:4px !important;
+}
+.sort-subpanel button{
+  min-height:27px !important;
+  padding:0 6px !important;
+  font-size:9.5px !important;
+}
+.notes-list-tools{
+  margin-bottom:5px !important;
+  min-height:27px !important;
+}
+.notes-icon-btn{
+  width:27px !important;
+  height:27px !important;
+  font-size:12px !important;
+}
+.notes-sort-summary{
+  font-size:8.8px !important;
+}
