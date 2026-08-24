@@ -401,7 +401,7 @@ async function deleteNotebookSafely(nb){
     title: "Move Notebook to Trash",
     message:
       noteCount > 0
-        ? `"${nb.name}" contains ${noteCount} note(s). The notebook will move to Trash. Its notes will stay attached and will return with the notebook if restored.`
+        ? `"${nb.name}" contains ${noteCount} note(s). The notebook and all notes inside it will move to Trash together.`
         : `Move empty notebook "${nb.name}" to Trash?`,
     confirmText: "Move to Trash",
     destructive: true,
@@ -409,30 +409,69 @@ async function deleteNotebookSafely(nb){
 
   if (!confirmed) return;
 
-  const { error } = await client
+  const trashedAt = new Date().toISOString();
+
+  // Trash all notes inside the notebook first.
+  const { error: notesError } = await client
+    .from("notes")
+    .update({
+      is_deleted: true,
+      trashed_at: trashedAt,
+    })
+    .eq("notebook_id", nb.id);
+
+  if (notesError) {
+    await centeredMessage(
+      "Delete Cancelled",
+      "The notes could not be moved to Trash, so the notebook was not deleted."
+    );
+    return;
+  }
+
+  // Then trash the notebook itself.
+  const { error: notebookError } = await client
     .from("notebooks")
     .update({
       is_deleted: true,
-      trashed_at: new Date().toISOString(),
+      trashed_at: trashedAt,
     })
     .eq("id", nb.id);
 
-  if (error) return showNotesError(error.message);
+  if (notebookError) {
+    // Roll back note trash state if notebook trashing fails.
+    await client
+      .from("notes")
+      .update({
+        is_deleted: false,
+        trashed_at: null,
+      })
+      .eq("notebook_id", nb.id)
+      .eq("trashed_at", trashedAt);
+
+    return showNotesError(notebookError.message);
+  }
 
   if (notesState.selectedNotebookId === nb.id) {
     notesState.selectedNotebookId = "all";
   }
 
   notesState.selectedNoteId = null;
-  await loadNotebooks();
-  await loadNoteCounts();
-  await loadNotes();
+
+  await Promise.all([
+    loadNotebooks(),
+    loadNoteCounts(),
+    loadNotes(),
+  ]);
+
   renderNotebooks();
+  renderNotes();
   clearEditorSelection();
 
   await centeredMessage(
     "Moved to Trash",
-    `"${nb.name}" is now in Trash.`
+    noteCount > 0
+      ? `"${nb.name}" and ${noteCount} note(s) were moved to Trash.`
+      : `"${nb.name}" was moved to Trash.`
   );
 }
 
@@ -1304,7 +1343,10 @@ async function openTrashView(){
         </div>`;
 
       row.querySelector("strong").textContent = note.title || "Untitled Note";
-      row.querySelector("small").textContent = relativeDeletedTime(note.trashed_at);
+      const deletedParentNotebook = notebooks.find((nb) => nb.id === note.notebook_id);
+      row.querySelector("small").textContent = deletedParentNotebook
+        ? `${relativeDeletedTime(note.trashed_at)} · ${deletedParentNotebook.name}`
+        : relativeDeletedTime(note.trashed_at);
 
       row.querySelector("[data-restore]").onclick = async () => {
         const { error } = await client
@@ -1389,16 +1431,37 @@ async function openTrashView(){
       }
 
       row.querySelector("[data-restore]").onclick = async () => {
-        const { error } = await client
+        const { error: notebookRestoreError } = await client
           .from("notebooks")
           .update({ is_deleted: false, trashed_at: null })
           .eq("id", notebook.id);
 
-        if (error) return showNotesError(error.message);
+        if (notebookRestoreError) return showNotesError(notebookRestoreError.message);
+
+        const { error: notesRestoreError } = await client
+          .from("notes")
+          .update({ is_deleted: false, trashed_at: null })
+          .eq("notebook_id", notebook.id)
+          .eq("is_deleted", true);
+
+        if (notesRestoreError) {
+          // Keep state consistent if restoring child notes fails.
+          await client
+            .from("notebooks")
+            .update({ is_deleted: true, trashed_at: notebook.trashed_at || new Date().toISOString() })
+            .eq("id", notebook.id);
+
+          return showNotesError(notesRestoreError.message);
+        }
 
         row.remove();
-        await loadNotebooks();
-        await loadNotes();
+
+        await Promise.all([
+          loadNotebooks(),
+          loadNoteCounts(),
+          loadNotes(),
+        ]);
+
         renderNotebooks();
         renderNotes();
 
@@ -1407,7 +1470,10 @@ async function openTrashView(){
           renderCompactEmpty(notebooksList, "No deleted notebooks.");
         }
 
-        await centeredMessage("Notebook Restored", `"${notebook.name}" was restored.`);
+        await centeredMessage(
+          "Notebook Restored",
+          `"${notebook.name}" and its trashed notes were restored.`
+        );
       };
 
       row.querySelector("[data-delete]").onclick = async () => {
