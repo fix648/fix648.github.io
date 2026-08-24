@@ -833,7 +833,7 @@ function noteActionMenuItems(note){
     { id: "color", icon: "◉", label: "Assign Color", group: 2, submenu: true },
     { id: "duplicate", icon: "⧉", label: "Duplicate", group: 2 },
 
-    { id: "trash", icon: "🗑", label: "Move to Trash", group: 3, danger: true },
+    { id: "trash", icon: "⌫", label: "Move to Trash", group: 3, danger: true },
   ];
 }
 
@@ -1337,7 +1337,13 @@ async function openTrashView(){
           </button>
           <div class="trash-action-divider"></div>
           <button class="delete-action" data-delete title="Delete permanently">
-            <span class="trash-action-icon">🗑</span>
+            <span class="trash-action-icon"><svg class="trash-action-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16"></path>
+              <path d="M9 7V4h6v3"></path>
+              <path d="M6.5 7l.8 13h9.4l.8-13"></path>
+              <path d="M10 11v5"></path>
+              <path d="M14 11v5"></path>
+            </svg></span>
             <span>Delete</span>
           </button>
         </div>`;
@@ -1418,7 +1424,13 @@ async function openTrashView(){
           </button>
           <div class="trash-action-divider"></div>
           <button class="delete-action" data-delete title="Delete permanently">
-            <span class="trash-action-icon">🗑</span>
+            <span class="trash-action-icon"><svg class="trash-action-svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16"></path>
+              <path d="M9 7V4h6v3"></path>
+              <path d="M6.5 7l.8 13h9.4l.8-13"></path>
+              <path d="M10 11v5"></path>
+              <path d="M14 11v5"></path>
+            </svg></span>
             <span>Delete</span>
           </button>
         </div>`;

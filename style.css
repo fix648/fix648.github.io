@@ -1954,3 +1954,147 @@
 .notes-sort-summary{
   font-size:8.8px !important;
 }
+
+
+/* =========================================================
+   Notes v6.8 — selected-title emphasis + tighter compact UI
+   ========================================================= */
+
+/* Only the selected Note title is bold. */
+.note-card strong,
+.note-row strong{
+  font-weight:500 !important;
+}
+
+.note-card.active strong,
+.note-row.active strong{
+  font-weight:800 !important;
+}
+
+/* Further compact Notes list. */
+.note-list.compact-view .note-card{
+  min-height:29px !important;
+  padding:4px 6px !important;
+}
+
+.note-row{
+  grid-template-columns:minmax(0,1fr) 22px !important;
+  border-radius:5px !important;
+}
+
+.note-menu-button{
+  width:22px !important;
+  min-width:22px !important;
+  height:27px !important;
+  font-size:14px !important;
+}
+
+.note-compact-main{
+  gap:4px !important;
+}
+
+.note-compact-main strong{
+  font-size:11px !important;
+}
+
+.note-relative-time{
+  font-size:8.2px !important;
+}
+
+.note-mini-icons{
+  font-size:7px !important;
+  gap:1px !important;
+}
+
+.note-group-heading{
+  font-size:8.3px !important;
+  padding:6px 6px 2px !important;
+}
+
+/* Further compact Notebook list. */
+.notebook-item{
+  min-height:30px !important;
+  padding:4px 6px !important;
+  font-size:11.5px !important;
+  gap:5px !important;
+}
+
+.notebook-menu{
+  width:22px !important;
+  height:26px !important;
+  font-size:14px !important;
+}
+
+.notebook-count{
+  font-size:8.5px !important;
+}
+
+/* Trash navigation styling to match supplied red outline icon reference. */
+.trash-view-btn{
+  min-height:31px !important;
+  padding:0 8px !important;
+  gap:7px !important;
+  color:#ef4444 !important;
+  font-weight:600 !important;
+}
+
+.trash-nav-icon{
+  width:17px;
+  height:17px;
+  flex:none;
+  fill:none;
+  stroke:#ef4444;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+.trash-view-btn:hover{
+  background:#fff1f2 !important;
+  border-color:#fecdd3 !important;
+  color:#dc2626 !important;
+}
+
+.trash-view-btn:hover .trash-nav-icon{
+  stroke:#dc2626;
+}
+
+/* Same clean outline icon for permanent delete actions. */
+.trash-action-svg{
+  width:17px;
+  height:17px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+/* Make trash action rows slightly tighter too. */
+.trash-row{
+  min-height:58px !important;
+  padding:7px 9px !important;
+}
+
+.trash-item-icon{
+  width:34px !important;
+  height:34px !important;
+}
+
+.trash-actions button{
+  min-width:50px !important;
+  min-height:39px !important;
+}
+
+.dark .trash-view-btn{
+  color:#ff7a7a !important;
+}
+
+.dark .trash-nav-icon{
+  stroke:#ff7a7a;
+}
+
+.dark .trash-view-btn:hover{
+  background:#3a2020 !important;
+  border-color:#5b2a28 !important;
+}
