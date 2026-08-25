@@ -504,16 +504,72 @@ async function unlockNotebook(nb){
   await loadNotebooks(); await loadNotes(); renderNotebooks(); renderNotes();
 }
 async function lockNote(note){
-  const p=await passwordModal("Lock Note",`Set a password for "${note.title||"Untitled Note"}".`,"Lock"); if(p===null)return;
-  if(!p||p.length<4)return centeredMessage("Password Required","Use at least 4 characters.");
-  const r=await rpcSecurity("portal_lock_note",{p_note_id:note.id,p_password:p}); if(!r.ok)return;
-  await refreshNotesAfterAction(note.id);
+  const p = await passwordModal(
+    "Lock Note",
+    `Set a password for "${note.title || "Untitled Note"}".`,
+    "Lock"
+  );
+  if (p === null) return;
+
+  if (!p || p.length < 4) {
+    return centeredMessage("Password Required", "Use at least 4 characters.");
+  }
+
+  const r = await rpcSecurity("portal_lock_note", {
+    p_note_id: note.id,
+    p_password: p
+  });
+  if (!r.ok) return;
+
+  // Close the editor immediately if this exact Note was open.
+  // Never call selectNote() here, otherwise Lock immediately triggers Unlock.
+  if (notesState.selectedNoteId === note.id) {
+    clearEditorSelection();
+  }
+
+  await Promise.all([
+    loadNoteCounts(),
+    loadNotes(),
+  ]);
+
+  renderNotebooks();
+  renderNotes();
+
+  await centeredMessage(
+    "Note Locked",
+    `"${note.title || "Untitled Note"}" is locked.`
+  );
 }
 async function unlockNote(note){
-  const p=await passwordModal("Unlock Note",`Enter the password for "${note.title||"Untitled Note"}".`,"Unlock"); if(p===null)return;
-  const r=await rpcSecurity("portal_unlock_note",{p_note_id:note.id,p_password:p});
-  if(!r.ok)return; if(!r.data)return centeredMessage("Incorrect Password","The note password is incorrect.");
-  await refreshNotesAfterAction(note.id);
+  const p = await passwordModal(
+    "Unlock Note",
+    `Enter the password for "${note.title || "Untitled Note"}".`,
+    "Unlock"
+  );
+  if (p === null) return;
+
+  const r = await rpcSecurity("portal_unlock_note", {
+    p_note_id: note.id,
+    p_password: p
+  });
+  if (!r.ok) return;
+
+  if (!r.data) {
+    return centeredMessage("Incorrect Password", "The note password is incorrect.");
+  }
+
+  await Promise.all([
+    loadNoteCounts(),
+    loadNotes(),
+  ]);
+
+  renderNotebooks();
+  renderNotes();
+
+  await centeredMessage(
+    "Note Unlocked",
+    `"${note.title || "Untitled Note"}" is unlocked.`
+  );
 }
 function centeredAutoDeleteModal(){
   return new Promise((resolve)=>{
@@ -1119,17 +1175,30 @@ async function refreshNotesAfterAction(preferredNoteId = null){
   await loadNotes();
   renderNotebooks();
 
+  const selected = notesState.notes.find(
+    (note) => note.id === notesState.selectedNoteId
+  );
+
+  if (selected && isNoteEffectivelyLocked(selected)) {
+    clearEditorSelection();
+    return;
+  }
+
   if (preferredNoteId) {
-    const stillVisible = notesState.notes.some((note) => note.id === preferredNoteId);
-    if (stillVisible) {
+    const preferred = notesState.notes.find((note) => note.id === preferredNoteId);
+    if (preferred && !isNoteEffectivelyLocked(preferred)) {
       await selectNote(preferredNoteId);
       return;
     }
   }
 
-  if (notesState.selectedNoteId && !notesState.notes.some((note) => note.id === notesState.selectedNoteId)) {
-    notesState.selectedNoteId = null;
+  if (
+    notesState.selectedNoteId &&
+    !notesState.notes.some((note) => note.id === notesState.selectedNoteId)
+  ) {
     clearEditorSelection();
+  } else {
+    renderNotes();
   }
 }
 
@@ -1843,7 +1912,9 @@ function renderNotes(){
               <div class="note-mini-icons">
                 ${note.is_pinned ? '<span title="Pinned">📌</span>' : ""}
                 ${note.is_favorite ? '<span title="Favorite">★</span>' : ""}
-                ${isNoteEffectivelyLocked(note) ? '<span title="Locked">🔒</span>' : ""}
+                ${note.is_locked
+  ? '<span title="Note locked">🔒</span>'
+  : (isNotebookInheritedLocked(note) ? '<span title="Locked by Notebook">🔐</span>' : "")}
               </div>
             </div>
             <span class="note-relative-time">${relative}</span>
@@ -1856,7 +1927,9 @@ function renderNotes(){
             <div class="note-mini-icons">
               ${note.is_pinned ? '<span title="Pinned">📌</span>' : ""}
               ${note.is_favorite ? '<span title="Favorite">★</span>' : ""}
-              ${isNoteEffectivelyLocked(note) ? '<span title="Locked">🔒</span>' : ""}
+              ${note.is_locked
+  ? '<span title="Note locked">🔒</span>'
+  : (isNotebookInheritedLocked(note) ? '<span title="Locked by Notebook">🔐</span>' : "")}
             </div>
           </div>
           <p></p>
@@ -2205,26 +2278,60 @@ function updateToolbarState(){
 }
 
 async function selectNote(id){
-  notesState.selectedNoteId = id;
-  renderNotes();
-  const note = notesState.notes.find(n => n.id === id);
+  const note = notesState.notes.find((n) => n.id === id);
   if (!note) return;
-  if(isNotebookInheritedLocked(note)){
-    await centeredMessage("Notebook Locked","Unlock the Notebook first to open this Note.");
+
+  // A Note inside a locked Notebook cannot be opened from the Note itself.
+  if (isNotebookInheritedLocked(note)) {
+    clearEditorSelection();
+    renderNotes();
+    await centeredMessage(
+      "Notebook Locked",
+      "Unlock the Notebook first to open this Note."
+    );
     return;
   }
-  if(note.is_locked){
-    const p=await passwordModal("Unlock Note",`Enter the password for "${note.title||"Untitled Note"}".`,"Open");
-    if(p===null)return;
-    const r=await rpcSecurity("portal_verify_note",{p_note_id:note.id,p_password:p});
-    if(!r.ok||!r.data){await centeredMessage("Incorrect Password","The note password is incorrect.");return;}
+
+  // Own Note lock: hide any editor content before asking for password.
+  // Only after successful verification may this Note become selected/open.
+  if (note.is_locked) {
+    clearEditorSelection();
+    renderNotes();
+
+    const p = await passwordModal(
+      "Unlock Note",
+      `Enter the password for "${note.title || "Untitled Note"}".`,
+      "Open"
+    );
+    if (p === null) return;
+
+    const r = await rpcSecurity("portal_verify_note", {
+      p_note_id: note.id,
+      p_password: p
+    });
+
+    if (!r.ok || !r.data) {
+      await centeredMessage(
+        "Incorrect Password",
+        "The note password is incorrect."
+      );
+      return;
+    }
   }
+
+  // Selection happens only after lock checks pass.
+  notesState.selectedNoteId = id;
+  renderNotes();
+
   await initTiptap();
   $("editorEmpty").classList.add("hidden");
   $("editorWrap").classList.remove("hidden");
+  $("noteTitle").disabled = false;
   $("noteTitle").value = note.title || "Untitled Note";
   renderEditorNotebookSelector(note);
+  notesState.editor.setEditable(true);
   notesState.editor.commands.setContent(note.content || emptyDoc);
+  applyEditorDefaultsIfEmpty();
   updateWordCount();
   updateEditorPlaceholder();
   $("lastUpdated").textContent = `Last updated ${new Date(note.updated_at).toLocaleString()}`;
@@ -2233,8 +2340,24 @@ async function selectNote(id){
 
 function clearEditorSelection(){
   notesState.selectedNoteId = null;
+
+  if (notesState.editor) {
+    try {
+      notesState.editor.commands.setContent(emptyDoc, false);
+      notesState.editor.setEditable(false);
+    } catch (error) {
+      console.warn("EDITOR_CLEAR_WARNING", error);
+    }
+  }
+
+  if ($("noteTitle")) {
+    $("noteTitle").value = "";
+    $("noteTitle").disabled = true;
+  }
+
   $("editorWrap").classList.add("hidden");
   $("editorEmpty").classList.remove("hidden");
+  renderNotes();
 }
 
 function scheduleSave(){
@@ -2471,91 +2594,4 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
   const { data: { session } } = await client.auth.getSession();
   showOnly(session ? "app" : "login");
   if (session) showPortalView("dashboard");
-})();
-
-
-/* =========================================================
-   Notes v7.2 — Lock behavior hotfix
-   - successful Lock closes current editor immediately
-   - prevents the same click from triggering immediate Unlock
-   - locked note content is never left editable/visible
-   ========================================================= */
-(() => {
-  let lockActionGuardUntil = 0;
-
-  function v72CloseLockedEditor(noteId){
-    try {
-      if (typeof currentNote !== "undefined" && currentNote && String(currentNote.id) === String(noteId)) {
-        currentNote = null;
-      }
-    } catch(e) {}
-
-    const editor = document.querySelector(
-      '#noteEditor,[data-note-editor],.note-editor,[contenteditable="true"].editor,.editor-content,[contenteditable="true"]'
-    );
-    if (editor) {
-      if (editor.hasAttribute('contenteditable')) editor.setAttribute('contenteditable','false');
-      if ('innerHTML' in editor) editor.innerHTML = '';
-    }
-
-    const title = document.querySelector('#noteTitle,[data-note-title],.note-title-input');
-    if (title && 'value' in title) {
-      title.value = '';
-      title.disabled = true;
-    }
-
-    const pane = document.querySelector('.editor-pane,.note-editor-pane,#editorPane,[data-editor-pane]');
-    if (pane) pane.classList.add('locked-note-closed');
-
-    // Prefer the app's normal empty-editor renderer when available.
-    for (const fn of ['clearEditor','showEmptyEditor','renderEmptyEditor','renderNoNoteSelected']) {
-      try {
-        if (typeof window[fn] === 'function') { window[fn](); break; }
-      } catch(e) {}
-    }
-  }
-
-  // Capture Lock button submission. After the existing handler succeeds and the
-  // note becomes locked, close the editor before any selection/unlock flow can run.
-  document.addEventListener('click', (ev) => {
-    const btn = ev.target.closest('button');
-    if (!btn) return;
-    const txt = (btn.textContent || '').trim().toLowerCase();
-    const modal = btn.closest('.modal,.dialog,[role="dialog"],.confirm-modal,.custom-modal');
-    const heading = modal ? (modal.textContent || '').toLowerCase() : '';
-
-    if (txt === 'lock' && heading.includes('lock note')) {
-      lockActionGuardUntil = Date.now() + 1800;
-      let noteId = null;
-      try { noteId = currentNote?.id || selectedNoteId || activeNoteId || null; } catch(e) {}
-
-      setTimeout(() => {
-        // Only close if the UI now marks this note locked, or if app state says locked.
-        let locked = false;
-        try {
-          const n = (typeof notes !== 'undefined' && Array.isArray(notes))
-            ? notes.find(x => String(x.id) === String(noteId)) : null;
-          locked = !!(n && (n.is_locked || n.locked));
-        } catch(e) {}
-        if (!locked) {
-          const row = noteId
-            ? document.querySelector(`[data-note-id="${CSS.escape(String(noteId))}"]`)
-            : document.querySelector('.note-item.selected,.note-row.selected,.note-item.active');
-          locked = !!(row && (row.querySelector('.lock-icon,[data-lock-icon]') || /🔒|🔐/.test(row.textContent || '')));
-        }
-        if (locked) v72CloseLockedEditor(noteId);
-      }, 450);
-    }
-  }, true);
-
-  // Prevent an immediate Unlock dialog caused by the same Lock interaction.
-  document.addEventListener('click', (ev) => {
-    if (Date.now() >= lockActionGuardUntil) return;
-    const row = ev.target.closest('[data-note-id],.note-item,.note-row');
-    if (!row) return;
-    if (row.querySelector('.lock-icon,[data-lock-icon]') || /🔒|🔐/.test(row.textContent || '')) {
-      ev.preventDefault();
-      ev.stopImmediatePropagation();
-    }
-  }, true);
 })();
