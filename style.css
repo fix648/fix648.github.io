@@ -2152,3 +2152,23 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
 .auto-delete-label{display:grid;gap:5px;margin-top:10px;font-size:11px;color:#475467}
 .auto-delete-datetime,.auto-delete-mode{min-height:36px;border:1px solid #d0d5dd;border-radius:7px;padding:6px 9px;font:inherit;background:#fff}
 .dark .auto-delete-datetime,.dark .auto-delete-mode{background:#202329;border-color:#343942;color:#f2f4f7}
+
+/* v7.1 Trash button clarity */
+.notebook-footer{display:grid!important;gap:6px!important}
+.trash-view-btn,#newNotebookBottom{
+  width:100%!important;height:36px!important;min-height:36px!important;
+  margin:0!important;box-sizing:border-box!important;border-radius:8px!important;
+  font-size:12px!important;font-weight:600!important;line-height:1!important;
+}
+.trash-view-btn{
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  gap:7px!important;padding:0 12px!important;background:#fff!important;
+  border:1px solid #f1b5b5!important;color:#dc2626!important;
+  opacity:1!important;filter:none!important;text-shadow:none!important;
+}
+.trash-nav-icon{
+  width:15px!important;height:15px!important;opacity:1!important;filter:none!important;
+  stroke:#dc2626!important;stroke-width:1.8!important;shape-rendering:geometricPrecision;
+}
+.trash-view-btn:hover{background:#fff5f5!important;border-color:#ef8888!important;color:#b91c1c!important}
+.trash-view-btn:hover .trash-nav-icon{stroke:#b91c1c!important}
