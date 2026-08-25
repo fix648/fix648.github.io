@@ -144,7 +144,7 @@ function ensureUiLayers(){
     const menu = document.createElement("div");
     menu.id = "notebookContextMenu";
     menu.className = "notebook-context-menu hidden";
-    menu.innerHTML = notebookActionMenuHtml();
+    menu.innerHTML = "";
     document.body.appendChild(menu);
   }
 
@@ -185,21 +185,26 @@ const PORTAL_NOTEBOOK_COLORS = [
 function notebookColorFor(note){
   return notesState.notebooks.find((nb) => nb.id === note.notebook_id)?.color || "";
 }
+function parentNotebookFor(note){ return notesState.notebooks.find((nb)=>nb.id===note.notebook_id)||null; }
+function isNotebookInheritedLocked(note){ return !!parentNotebookFor(note)?.is_locked; }
+function isNoteEffectivelyLocked(note){ return !!note.is_locked || isNotebookInheritedLocked(note); }
 
-const NOTEBOOK_ACTIONS = [
-  { id: "rename", label: "Rename", icon: "✎", danger: false },
-  { id: "color", label: "Assign Color", icon: "◉", danger: false },
-  { id: "delete", label: "Move to Trash", icon: "🗑", danger: true },
-];
+function notebookActionItems(nb){
+  return [
+    { id:"rename", label:"Rename", icon:"✎", danger:false },
+    { id:"color", label:"Assign Color", icon:"◉", danger:false },
+    { id:nb.is_locked ? "unlock" : "lock", label:nb.is_locked ? "Unlock" : "Lock", icon:nb.is_locked ? "🔓" : "🔒", danger:false },
+    { id:"delete", label:"Move to Trash", icon:"⌫", danger:true },
+  ];
+}
 
-function notebookActionMenuHtml(){
-  return NOTEBOOK_ACTIONS.map((item) => `
+function notebookActionMenuHtml(nb){
+  return notebookActionItems(nb).map((item)=>`
     <button data-action="${item.id}" class="${item.danger ? "danger" : ""}">
-      <span class="notebook-menu-icon">${item.icon || ""}</span>
+      <span class="notebook-menu-icon">${item.icon||""}</span>
       <span>${item.label}</span>
-      ${item.id === "color" ? '<span class="menu-chevron">›</span>' : ""}
-    </button>
-  `).join("");
+      ${item.id==="color" ? '<span class="menu-chevron">›</span>' : ""}
+    </button>`).join("");
 }
 
 function showNotebookDotsMenu(button, nb){
@@ -207,8 +212,8 @@ function showNotebookDotsMenu(button, nb){
 
   const menu = $("notebookContextMenu");
   menu.dataset.notebookId = nb.id;
-  menu.innerHTML = notebookActionMenuHtml();
-  menu.innerHTML = notebookActionMenuHtml();
+  menu.innerHTML = notebookActionMenuHtml(nb);
+  menu.innerHTML = notebookActionMenuHtml(nb);
 
   const rect = button.getBoundingClientRect();
   const menuWidth = 160;
@@ -476,6 +481,68 @@ async function deleteNotebookSafely(nb){
 }
 
 
+
+async function passwordModal(title,message,confirmText){
+  return centeredModal({title,message,inputValue:"",inputPlaceholder:"Password",confirmText});
+}
+async function rpcSecurity(name,args){
+  const {data,error}=await client.rpc(name,args);
+  if(error){ showNotesError(error.message); return {ok:false,data:null}; }
+  return {ok:true,data};
+}
+async function lockNotebook(nb){
+  const p=await passwordModal("Lock Notebook",`Set a password for "${nb.name}". Notes inside it will also be locked.`,"Lock");
+  if(p===null)return;
+  if(!p||p.length<4)return centeredMessage("Password Required","Use at least 4 characters.");
+  const r=await rpcSecurity("portal_lock_notebook",{p_notebook_id:nb.id,p_password:p}); if(!r.ok)return;
+  await loadNotebooks(); await loadNotes(); renderNotebooks(); renderNotes();
+}
+async function unlockNotebook(nb){
+  const p=await passwordModal("Unlock Notebook",`Enter the password for "${nb.name}".`,"Unlock"); if(p===null)return;
+  const r=await rpcSecurity("portal_unlock_notebook",{p_notebook_id:nb.id,p_password:p});
+  if(!r.ok)return; if(!r.data)return centeredMessage("Incorrect Password","The notebook password is incorrect.");
+  await loadNotebooks(); await loadNotes(); renderNotebooks(); renderNotes();
+}
+async function lockNote(note){
+  const p=await passwordModal("Lock Note",`Set a password for "${note.title||"Untitled Note"}".`,"Lock"); if(p===null)return;
+  if(!p||p.length<4)return centeredMessage("Password Required","Use at least 4 characters.");
+  const r=await rpcSecurity("portal_lock_note",{p_note_id:note.id,p_password:p}); if(!r.ok)return;
+  await refreshNotesAfterAction(note.id);
+}
+async function unlockNote(note){
+  const p=await passwordModal("Unlock Note",`Enter the password for "${note.title||"Untitled Note"}".`,"Unlock"); if(p===null)return;
+  const r=await rpcSecurity("portal_unlock_note",{p_note_id:note.id,p_password:p});
+  if(!r.ok)return; if(!r.data)return centeredMessage("Incorrect Password","The note password is incorrect.");
+  await refreshNotesAfterAction(note.id);
+}
+function centeredAutoDeleteModal(){
+  return new Promise((resolve)=>{
+    const o=document.createElement("div"); o.className="portal-modal-overlay";
+    o.innerHTML=`<div class="portal-modal auto-delete-modal"><h3>Auto Delete</h3>
+      <p class="portal-modal-message">Choose when this note should be deleted.</p>
+      <label class="auto-delete-label">Date & time<input class="auto-delete-datetime" type="datetime-local"></label>
+      <label class="auto-delete-label">Action<select class="auto-delete-mode">
+        <option value="trash">Move to Trash</option><option value="permanent">Delete Permanently</option>
+      </select></label>
+      <div class="portal-modal-actions"><button class="portal-modal-btn secondary" data-cancel>Cancel</button>
+      <button class="portal-modal-btn" data-save>Schedule</button></div></div>`;
+    const done=v=>{o.remove();resolve(v)};
+    o.querySelector("[data-cancel]").onclick=()=>done(null);
+    o.querySelector("[data-save]").onclick=()=>{
+      const d=o.querySelector(".auto-delete-datetime").value,m=o.querySelector(".auto-delete-mode").value;
+      if(d)done({datetime:d,mode:m});
+    };
+    o.addEventListener("click",e=>{if(e.target===o)done(null)}); document.body.appendChild(o);
+  });
+}
+async function scheduleAutoDelete(note){
+  const v=await centeredAutoDeleteModal(); if(!v)return;
+  const when=new Date(v.datetime);
+  if(Number.isNaN(when.getTime())||when<=new Date())return centeredMessage("Invalid Time","Choose a future date and time.");
+  const u=await updateNoteActionFields(note.id,{auto_delete_at:when.toISOString(),auto_delete_mode:v.mode});
+  if(u){await refreshNotesAfterAction(note.id); await centeredMessage("Auto Delete Scheduled","Schedule saved.");}
+}
+
 async function assignNotebookColor(nb){
   const color = await centeredChoiceModal({
     title: "Assign Notebook Color",
@@ -502,6 +569,8 @@ async function handleNotebookContextAction(action, nb){
   hideNotebookContextMenu();
   if (action === "rename") return renameNotebook(nb);
   if (action === "color") return assignNotebookColor(nb);
+  if (action === "lock") return lockNotebook(nb);
+  if (action === "unlock") return unlockNotebook(nb);
   if (action === "delete") return deleteNotebookSafely(nb);
 }
 
@@ -677,7 +746,7 @@ async function loadNoteCounts(){
 async function loadNotes(){
   const user = await getCurrentUser();
   let query = client.from("notes")
-    .select("id,notebook_id,title,content,preview,is_pinned,is_favorite,is_locked,color,updated_at,created_at")
+    .select("id,notebook_id,title,content,preview,is_pinned,is_favorite,is_locked,color,auto_delete_at,auto_delete_mode,updated_at,created_at")
     .eq("user_id", user.id)
     .eq("is_deleted", false)
     .eq("is_archived", false)
@@ -710,6 +779,10 @@ function renderNotebooks(){
       <button class="notebook-menu" title="Notebook menu" aria-label="Notebook menu">⋮</button>
     `;
     row.querySelector(".notebook-name").textContent = nb.name;
+    if(nb.is_locked){
+      const lock=document.createElement("span"); lock.className="notebook-lock-indicator"; lock.textContent="🔒";
+      row.querySelector(".notebook-name").after(lock);
+    }
     if (nb.color) {
       row.querySelector(".notebook-icon").style.color = nb.color;
       row.querySelector(".notebook-name").style.color = nb.color;
@@ -825,16 +898,20 @@ function hideNoteContextMenu(){
 }
 
 function noteActionMenuItems(note){
-  return [
-    { id: "pin", icon: note.is_pinned ? "📌" : "📍", label: note.is_pinned ? "Unpin" : "Pin", group: 1 },
-    { id: "favorite", icon: note.is_favorite ? "★" : "☆", label: note.is_favorite ? "Remove Favorite" : "Favorite", group: 1 },
-
-    { id: "move", icon: "▤", label: "Move to Notebook", group: 2, submenu: true },
-    { id: "color", icon: "◉", label: "Assign Color", group: 2, submenu: true },
-    { id: "duplicate", icon: "⧉", label: "Duplicate", group: 2 },
-
-    { id: "trash", icon: "⌫", label: "Move to Trash", group: 3, danger: true },
+  const inherited=isNotebookInheritedLocked(note);
+  const items=[
+    {id:"pin",icon:note.is_pinned?"📌":"📍",label:note.is_pinned?"Unpin":"Pin",group:1},
+    {id:"favorite",icon:note.is_favorite?"★":"☆",label:note.is_favorite?"Remove Favorite":"Favorite",group:1},
   ];
+  if(!inherited) items.push({id:note.is_locked?"unlock":"lock",icon:note.is_locked?"🔓":"🔒",label:note.is_locked?"Unlock":"Lock",group:1});
+  items.push(
+    {id:"move",icon:"▤",label:"Move to Notebook",group:2,submenu:true},
+    {id:"color",icon:"◉",label:"Assign Color",group:2,submenu:true},
+    {id:"duplicate",icon:"⧉",label:"Duplicate",group:2},
+    {id:"autoDelete",icon:"◷",label:"Auto Delete",group:3},
+    {id:"trash",icon:"⌫",label:"Move to Trash",group:4,danger:true}
+  );
+  return items;
 }
 
 function noteActionMenuHtml(note){
@@ -1026,7 +1103,7 @@ async function updateNoteActionFields(noteId, patch){
     .from("notes")
     .update(patch)
     .eq("id", noteId)
-    .select("id,notebook_id,title,content,preview,is_pinned,is_favorite,is_locked,color,updated_at,created_at")
+    .select("id,notebook_id,title,content,preview,is_pinned,is_favorite,is_locked,color,auto_delete_at,auto_delete_mode,updated_at,created_at")
     .single();
 
   if (error) {
@@ -1201,9 +1278,12 @@ async function handleNoteAction(action, note){
 
   if (action === "pin") return toggleNotePin(note);
   if (action === "favorite") return toggleNoteFavorite(note);
+  if (action === "lock") return lockNote(note);
+  if (action === "unlock") return unlockNote(note);
   if (action === "move") return moveNoteFromAction(note);
   if (action === "color") return assignNoteColor(note);
   if (action === "duplicate") return duplicateNote(note);
+  if (action === "autoDelete") return scheduleAutoDelete(note);
   if (action === "trash") return moveNoteToTrash(note);
 }
 
@@ -1763,7 +1843,7 @@ function renderNotes(){
               <div class="note-mini-icons">
                 ${note.is_pinned ? '<span title="Pinned">📌</span>' : ""}
                 ${note.is_favorite ? '<span title="Favorite">★</span>' : ""}
-                ${note.is_locked ? '<span title="Locked">🔒</span>' : ""}
+                ${isNoteEffectivelyLocked(note) ? '<span title="Locked">🔒</span>' : ""}
               </div>
             </div>
             <span class="note-relative-time">${relative}</span>
@@ -1776,7 +1856,7 @@ function renderNotes(){
             <div class="note-mini-icons">
               ${note.is_pinned ? '<span title="Pinned">📌</span>' : ""}
               ${note.is_favorite ? '<span title="Favorite">★</span>' : ""}
-              ${note.is_locked ? '<span title="Locked">🔒</span>' : ""}
+              ${isNoteEffectivelyLocked(note) ? '<span title="Locked">🔒</span>' : ""}
             </div>
           </div>
           <p></p>
@@ -2129,6 +2209,16 @@ async function selectNote(id){
   renderNotes();
   const note = notesState.notes.find(n => n.id === id);
   if (!note) return;
+  if(isNotebookInheritedLocked(note)){
+    await centeredMessage("Notebook Locked","Unlock the Notebook first to open this Note.");
+    return;
+  }
+  if(note.is_locked){
+    const p=await passwordModal("Unlock Note",`Enter the password for "${note.title||"Untitled Note"}".`,"Open");
+    if(p===null)return;
+    const r=await rpcSecurity("portal_verify_note",{p_note_id:note.id,p_password:p});
+    if(!r.ok||!r.data){await centeredMessage("Incorrect Password","The note password is incorrect.");return;}
+  }
   await initTiptap();
   $("editorEmpty").classList.add("hidden");
   $("editorWrap").classList.remove("hidden");
@@ -2208,12 +2298,23 @@ function updateWordCount(){
   $("wordCount").textContent = `${words} word${words === 1 ? "" : "s"}`;
 }
 
+
+async function processDueAutoDeletesClient(){
+  const now=new Date().toISOString();
+  const {data:due}=await client.from("notes").select("id,auto_delete_mode").eq("is_deleted",false).not("auto_delete_at","is",null).lte("auto_delete_at",now);
+  for(const n of due||[]){
+    if(n.auto_delete_mode==="permanent") await client.from("notes").delete().eq("id",n.id);
+    else await client.from("notes").update({is_deleted:true,trashed_at:now,auto_delete_at:null}).eq("id",n.id);
+  }
+}
+
 async function openNotes(){
   showPortalView("notes");
   showNotesError("");
   bindTrashButton();
 
   try {
+    await processDueAutoDeletesClient();
     // Render database-backed panes as soon as possible.
     await Promise.all([
       loadNotebooks(),

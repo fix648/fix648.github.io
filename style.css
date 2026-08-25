@@ -2144,3 +2144,11 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
 .dark .editor-toolbar{background:#17191d !important}
 .dark .trash-view-btn{background:#202329 !important;border-color:#343942 !important;color:#ff7a7a !important}
 .dark .trash-nav-icon{stroke:#ff7a7a !important}
+
+.trash-view-btn{min-height:34px!important;font-size:12px!important}.trash-nav-icon{width:14px!important;height:14px!important}
+
+.notebook-lock-indicator{font-size:9px;margin-left:3px;opacity:.75}
+.auto-delete-modal{width:min(420px,92vw)!important}
+.auto-delete-label{display:grid;gap:5px;margin-top:10px;font-size:11px;color:#475467}
+.auto-delete-datetime,.auto-delete-mode{min-height:36px;border:1px solid #d0d5dd;border-radius:7px;padding:6px 9px;font:inherit;background:#fff}
+.dark .auto-delete-datetime,.dark .auto-delete-mode{background:#202329;border-color:#343942;color:#f2f4f7}
