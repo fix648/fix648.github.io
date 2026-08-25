@@ -2172,3 +2172,10 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
 }
 .trash-view-btn:hover{background:#fff5f5!important;border-color:#ef8888!important;color:#b91c1c!important}
 .trash-view-btn:hover .trash-nav-icon{stroke:#b91c1c!important}
+
+/* v7.2 locked editor safety */
+.locked-note-closed [contenteditable="true"],
+.locked-note-closed textarea,
+.locked-note-closed input.note-title-input{
+  pointer-events:none !important;
+}

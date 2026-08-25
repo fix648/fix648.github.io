@@ -2472,3 +2472,90 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
   showOnly(session ? "app" : "login");
   if (session) showPortalView("dashboard");
 })();
+
+
+/* =========================================================
+   Notes v7.2 — Lock behavior hotfix
+   - successful Lock closes current editor immediately
+   - prevents the same click from triggering immediate Unlock
+   - locked note content is never left editable/visible
+   ========================================================= */
+(() => {
+  let lockActionGuardUntil = 0;
+
+  function v72CloseLockedEditor(noteId){
+    try {
+      if (typeof currentNote !== "undefined" && currentNote && String(currentNote.id) === String(noteId)) {
+        currentNote = null;
+      }
+    } catch(e) {}
+
+    const editor = document.querySelector(
+      '#noteEditor,[data-note-editor],.note-editor,[contenteditable="true"].editor,.editor-content,[contenteditable="true"]'
+    );
+    if (editor) {
+      if (editor.hasAttribute('contenteditable')) editor.setAttribute('contenteditable','false');
+      if ('innerHTML' in editor) editor.innerHTML = '';
+    }
+
+    const title = document.querySelector('#noteTitle,[data-note-title],.note-title-input');
+    if (title && 'value' in title) {
+      title.value = '';
+      title.disabled = true;
+    }
+
+    const pane = document.querySelector('.editor-pane,.note-editor-pane,#editorPane,[data-editor-pane]');
+    if (pane) pane.classList.add('locked-note-closed');
+
+    // Prefer the app's normal empty-editor renderer when available.
+    for (const fn of ['clearEditor','showEmptyEditor','renderEmptyEditor','renderNoNoteSelected']) {
+      try {
+        if (typeof window[fn] === 'function') { window[fn](); break; }
+      } catch(e) {}
+    }
+  }
+
+  // Capture Lock button submission. After the existing handler succeeds and the
+  // note becomes locked, close the editor before any selection/unlock flow can run.
+  document.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('button');
+    if (!btn) return;
+    const txt = (btn.textContent || '').trim().toLowerCase();
+    const modal = btn.closest('.modal,.dialog,[role="dialog"],.confirm-modal,.custom-modal');
+    const heading = modal ? (modal.textContent || '').toLowerCase() : '';
+
+    if (txt === 'lock' && heading.includes('lock note')) {
+      lockActionGuardUntil = Date.now() + 1800;
+      let noteId = null;
+      try { noteId = currentNote?.id || selectedNoteId || activeNoteId || null; } catch(e) {}
+
+      setTimeout(() => {
+        // Only close if the UI now marks this note locked, or if app state says locked.
+        let locked = false;
+        try {
+          const n = (typeof notes !== 'undefined' && Array.isArray(notes))
+            ? notes.find(x => String(x.id) === String(noteId)) : null;
+          locked = !!(n && (n.is_locked || n.locked));
+        } catch(e) {}
+        if (!locked) {
+          const row = noteId
+            ? document.querySelector(`[data-note-id="${CSS.escape(String(noteId))}"]`)
+            : document.querySelector('.note-item.selected,.note-row.selected,.note-item.active');
+          locked = !!(row && (row.querySelector('.lock-icon,[data-lock-icon]') || /🔒|🔐/.test(row.textContent || '')));
+        }
+        if (locked) v72CloseLockedEditor(noteId);
+      }, 450);
+    }
+  }, true);
+
+  // Prevent an immediate Unlock dialog caused by the same Lock interaction.
+  document.addEventListener('click', (ev) => {
+    if (Date.now() >= lockActionGuardUntil) return;
+    const row = ev.target.closest('[data-note-id],.note-item,.note-row');
+    if (!row) return;
+    if (row.querySelector('.lock-icon,[data-lock-icon]') || /🔒|🔐/.test(row.textContent || '')) {
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+    }
+  }, true);
+})();
