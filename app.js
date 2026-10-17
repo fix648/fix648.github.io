@@ -688,11 +688,11 @@ function renderEditorNotebookSelector(note){
     select.appendChild(option);
   }
 
-  if (!note.notebook_id) {
+  {
     const option = document.createElement("option");
     option.value = "";
     option.textContent = "No Notebook";
-    option.selected = true;
+    option.selected = !note.notebook_id;
     select.insertBefore(option, select.firstChild);
   }
 }
@@ -1005,7 +1005,7 @@ function showNoteActionSubmenu(parentButton, note, type){
   submenu.className = `note-action-submenu ${type === "color" ? "color-submenu" : ""}`;
 
   if (type === "move") {
-    for (const nb of notesState.notebooks) {
+    for (const nb of [{ id: null, name: "No Notebook", color: null }, ...notesState.notebooks]) {
       const button = document.createElement("button");
       button.type = "button";
       button.className = "submenu-row";
@@ -1971,8 +1971,8 @@ function renderNotes(){
 
 async function createNote(){
   const user = await getCurrentUser();
-  let notebookId = notesState.selectedNotebookId === "all" ? notesState.notebooks[0]?.id : notesState.selectedNotebookId;
-  if (!notebookId) { await ensureDefaultNotebook(); notebookId = notesState.notebooks[0].id; }
+  // All Notes is not a notebook. Keep new notes unassigned unless a specific notebook is selected.
+  const notebookId = notesState.selectedNotebookId === "all" ? null : notesState.selectedNotebookId;
   const { data, error } = await client.from("notes").insert({
     user_id: user.id,
     notebook_id: notebookId,
@@ -1980,8 +1980,7 @@ async function createNote(){
     content: emptyDoc,
     preview: "",
   }).select().single();
-  if (error) return showNotesError(error.message);
-  if (notesState.selectedNotebookId !== "all" && notesState.selectedNotebookId !== notebookId) notesState.selectedNotebookId = notebookId;
+  if (error) return showNotesError(error.message + (error.code === "23502" ? " — Database notes.notebook_id must allow NULL for unassigned notes." : ""));
   await loadNoteCounts();
   await loadNotes();
   renderNotebooks();
