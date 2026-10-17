@@ -82,7 +82,22 @@ $("otpForm")?.addEventListener("submit", async (e) => {
 $("resendBtn")?.addEventListener("click", async () => { const loginId = sessionStorage.getItem("portalLoginId") || $("loginId").value.trim(); const { data } = await callPortalAuth({ action: "resend", loginId }); setMessage($("otpMessage"), data?.message || "Unable to resend code.", data?.success ? "ok" : "error"); });
 
 $("logoutBtn")?.addEventListener("click", async () => { await client.auth.signOut(); sessionStorage.removeItem("portalLoginId"); showOnly("login"); });
-$("settingsBtn")?.addEventListener("click", () => alert("Settings will be added in a later module."));
+$("settingsBtn")?.addEventListener("click", async () => {
+  const current = await passwordModal("Notes Settings", "Current Notes password (required to change it).", "Continue");
+  if (current === null) return;
+  const next = await passwordModal("Change Notes Password", "Enter a new Notes password (minimum 4 characters).", "Continue");
+  if (next === null) return;
+  if (next.length < 4) { await centeredMessage("Password too short", "Use at least 4 characters."); return; }
+  const again = await passwordModal("Confirm New Password", "Enter your new Notes password again.", "Change Password");
+  if (again === null) return;
+  if (again !== next) { await centeredMessage("Not changed", "New passwords do not match."); return; }
+  const { data, error } = await client.rpc("portal_notes_password_change", { p_old_password: current, p_new_password: next });
+  if (error || data !== true) {
+    await centeredMessage("Password not changed", error?.message || "Current password is incorrect, or Notes password has not been created.");
+    return;
+  }
+  await centeredMessage("Password updated", "Your Notes password has been changed.");
+});
 
 // ==============================
 // NOTES MODULE
@@ -2422,9 +2437,9 @@ async function checkNotesGate(){
   const { data: configured, error: statusError } = await client.rpc("portal_notes_password_exists");
   if (statusError) { await centeredMessage("Notes security unavailable", "Run the v7.9 SQL setup first. " + statusError.message); return false; }
   if (!configured) {
-    const first = await passwordModal("Create Notes Password", "Set a separate Notes password (minimum 8 characters). This is required before opening Notes.", "Continue");
+    const first = await passwordModal("Create Notes Password", "Set a separate Notes password (minimum 4 characters). This is required before opening Notes.", "Continue");
     if (first === null) return false;
-    if (first.length < 8) { await centeredMessage("Password too short", "Use at least 8 characters."); return false; }
+    if (first.length < 4) { await centeredMessage("Password too short", "Use at least 4 characters."); return false; }
     const confirm = await passwordModal("Confirm Notes Password", "Enter the same password again.", "Set Password");
     if (confirm === null || confirm !== first) { await centeredMessage("Not saved", "Passwords did not match."); return false; }
     const { data: saved, error } = await client.rpc("portal_notes_password_set", { p_password: first });
