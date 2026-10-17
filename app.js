@@ -264,7 +264,7 @@ function isNoteEffectivelyLocked(note){ return !!note.is_locked || isNotebookInh
 
 function notebookActionItems(nb){
   if(nb.is_fixed_protected) return [
-    { id:"lock", label:"Lock", icon:"🔒", danger:false },
+    { id:nb.is_locked ? "unlock" : "lock", label:nb.is_locked ? "Unlock" : "Lock", icon:nb.is_locked ? "🔓" : "🔒", danger:false },
     { id:"rename", label:"Rename", icon:"✎", danger:false },
   ];
   return [
@@ -568,7 +568,6 @@ async function rpcSecurity(name,args){
   return {ok:true,data};
 }
 async function lockNotebook(nb){
-  if(nb.is_fixed_protected) return centeredMessage("Coming Later", "Separate-password locking for Fixed Notebook is not available yet.");
   const p=await passwordModal("Lock Notebook",`Set a password for "${nb.name}". Notes inside it will also be locked.`,"Lock");
   if(p===null)return;
   if(!p||p.length<4)return centeredMessage("Password Required","Use at least 4 characters.");
