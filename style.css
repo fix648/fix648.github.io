@@ -2217,3 +2217,43 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
 }
 @media(prefers-reduced-motion:reduce){#portalSidebar,#portalMain{transition:none}}
 .dark #portalSidebar .sidebar-toggle{background:#20242b;border-color:#343942;color:#d7e1f2}
+
+
+/* v7.6 — Notes workspace edge-to-edge; dashboard stays in sidebar */
+#portalMain:has(#notesView:not(.hidden)){
+  padding:0!important;
+  max-width:none!important;
+  width:calc(100% - 230px)!important;
+}
+.portal-app.sidebar-collapsed #portalMain:has(#notesView:not(.hidden)){
+  width:calc(100% - 64px)!important;
+}
+#notesView:not(.hidden){min-height:100vh!important;width:100%;}
+#notesView .notes-topbar{display:none!important;}
+#notesView .notes-shell{
+  margin:0!important;
+  border-radius:0!important;
+  border-top:0!important;
+  border-bottom:0!important;
+  box-shadow:none!important;
+  min-height:100vh!important;
+  height:100vh!important;
+  width:100%!important;
+  grid-template-columns: minmax(200px, 15%) minmax(245px, 18%) minmax(0, 1fr)!important;
+}
+#notesView .notebook-pane,#notesView .note-list-pane{min-height:0!important;}
+#notesView .editor-pane,#notesView .editor-wrap,#notesView .editor-empty{
+  height:100%!important;min-height:0!important;
+}
+#notesView .notebook-footer{display:flex!important;flex-direction:column!important;gap:6px!important;margin-top:auto!important;}
+#notesView #newNotebookBottom{order:1;}
+#notesView #trashViewBtn{order:2;}
+@media(max-width:1050px){
+ #notesView .notes-shell{grid-template-columns:minmax(180px, 28%) minmax(230px, 1fr)!important;height:auto!important;min-height:100vh!important;}
+ #notesView .editor-pane{grid-column:1/-1;min-height:500px!important;height:60vh!important;}
+}
+@media(max-width:620px){
+ #notesView .notes-shell{display:block!important;}
+ #notesView .notebook-pane{min-height:280px!important;}
+ #notesView .note-list-pane{min-height:300px!important;}
+}
