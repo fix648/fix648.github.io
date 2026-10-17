@@ -108,7 +108,7 @@
             <button class="settings-category" type="button" data-settings-category="Display">Display Settings</button>
           </aside>
           <div class="settings-content">
-            <div class="settings-tabs"><button type="button" class="active">Open Password</button></div>
+            <div class="settings-tabs"><button type="button" class="active" id="settingsCurrentTab" disabled>Open Password</button></div>
             <section id="openNotesSettings">
               <form id="notesPasswordSettingsForm" autocomplete="off">
                 <div class="settings-field"><label for="notesOldPassword">Old Password</label><span class="settings-password-wrap"><input id="notesOldPassword" type="password" autocomplete="current-password" required /><button type="button" class="settings-eye" data-toggle-field="notesOldPassword" aria-label="Show notesOldPassword" aria-pressed="false" title="Show / hide">👁</button></span></div>
@@ -121,7 +121,8 @@
             </section>
             <section id="displaySettings" class="hidden" aria-label="Display Settings">
               <h2>Display Settings</h2>
-              <p class="display-help">Change list text sizes. Settings are saved in this browser.</p>
+              <p class="display-help">Choose the portal font and list text sizes. Click Save settings to keep changes in this browser.</p>
+              <div class="display-control"><label for="portalFontFamily">Portal font</label><select id="portalFontFamily" class="portal-font-select"><option value="system">System default</option><option value="inter">Inter</option><option value="arial">Arial</option><option value="verdana">Verdana</option><option value="georgia">Georgia</option><option value="tahoma">Tahoma</option></select></div>
               <div class="display-control"><label for="notebookFontSize">Notebook name size <output id="notebookFontValue">13px</output></label><input type="range" id="notebookFontSize" min="12" max="20" step="1" value="13"></div>
               <div class="display-control"><label for="noteFontSize">Note title size <output id="noteFontValue">13px</output></label><input type="range" id="noteFontSize" min="12" max="20" step="1" value="13"></div>
               <div class="display-settings-actions"><button type="button" id="resetDisplaySettings" class="settings-save-btn">Reset to default</button><button type="button" id="saveDisplaySettings" class="settings-save-btn">Save settings</button></div><p id="displaySettingsFeedback" class="display-settings-feedback" role="status" aria-live="polite"></p>

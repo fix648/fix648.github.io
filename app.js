@@ -95,6 +95,8 @@ document.querySelectorAll("[data-settings-category]").forEach(button => {
     $("displaySettings").classList.toggle("hidden", category !== "Display");
     $("settingsComingSoon").classList.toggle("hidden", category === "OpenNotes" || category === "Display");
     $("settingsCategoryTitle").textContent = category;
+    const currentTab = $("settingsCurrentTab");
+    if (currentTab) currentTab.textContent = category === "Display" ? "Display Settings" : "Open Password";
   });
 });
 document.querySelectorAll("[data-toggle-field]").forEach(button => {
@@ -2732,12 +2734,18 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
   const shell = document.querySelector('#notesView .notes-shell');
   if (!shell) return;
   const key = 'portal.notes.display.v7_15';
-  const defaults = {notebookFont:13, noteFont:13, notebooksWidth:285, notesWidth:325};
+  const defaults = {notebookFont:13, noteFont:13, notebooksWidth:285, notesWidth:325, portalFont:"system"};
   let prefs = {...defaults};
-  try { const stored = JSON.parse(localStorage.getItem(key) || '{}'); for(const k of Object.keys(defaults)) if(Number.isFinite(+stored[k])) prefs[k] = +stored[k]; } catch (_) {}
+  try { const stored = JSON.parse(localStorage.getItem(key) || '{}'); for(const k of Object.keys(defaults)) { if(k === "portalFont") {if(typeof stored[k] === "string") prefs[k] = stored[k];} else if(Number.isFinite(+stored[k])) prefs[k] = +stored[k]; } } catch (_) {}
   const save = () => { try {localStorage.setItem(key,JSON.stringify(prefs));return true;} catch (_) {return false;} };
   const feedback = (message) => { const el=document.getElementById("displaySettingsFeedback");if(el)el.textContent=message; };
   const clamp = (n,min,max) => Math.min(max,Math.max(min,n));
+  const portalFontOptions = {system:"system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",inter:"Inter, system-ui, sans-serif",arial:"Arial, Helvetica, sans-serif",verdana:"Verdana, Geneva, sans-serif",georgia:"Georgia, Times New Roman, serif",tahoma:"Tahoma, Geneva, sans-serif"};
+  function applyPortalFont(){
+    if(!Object.hasOwn(portalFontOptions,prefs.portalFont)) prefs.portalFont="system";
+    document.documentElement.style.setProperty("--portal-ui-font",portalFontOptions[prefs.portalFont]);
+    const picker=document.getElementById("portalFontFamily");if(picker)picker.value=prefs.portalFont;
+  }
   function applyFonts(){
     prefs.notebookFont=clamp(prefs.notebookFont,12,20);
     prefs.noteFont=clamp(prefs.noteFont,12,20);
@@ -2758,13 +2766,15 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
     shell.style.setProperty('grid-template-columns',`${prefs.notebooksWidth}px 7px ${prefs.notesWidth}px 7px minmax(0,1fr)`,'important');
   }
   applyFonts();
+  applyPortalFont();
   requestAnimationFrame(applyWidths);
   window.addEventListener('resize',applyWidths);
   [['notebookFontSize','notebookFont'],['noteFontSize','noteFont']].forEach(([id,k])=>{
     document.getElementById(id)?.addEventListener('input',e=>{prefs[k]=Number(e.target.value);applyFonts();feedback('Unsaved changes');});
   });
+  document.getElementById('portalFontFamily')?.addEventListener('change',e=>{prefs.portalFont=e.target.value;applyPortalFont();feedback('Unsaved changes');});
   document.getElementById('resetDisplaySettings')?.addEventListener('click',()=>{
-    prefs.notebookFont=defaults.notebookFont;prefs.noteFont=defaults.noteFont;applyFonts();feedback('Default sizes selected. Click Save settings to keep them.');
+    prefs.notebookFont=defaults.notebookFont;prefs.noteFont=defaults.noteFont;prefs.portalFont=defaults.portalFont;applyFonts();applyPortalFont();feedback('Defaults selected. Click Save settings to keep them.');
   });
   document.getElementById('saveDisplaySettings')?.addEventListener('click',()=>{feedback(save()?'Display settings saved successfully.':'Unable to save in this browser.');});
   shell.querySelectorAll('.pane-resizer').forEach(handle=>{
