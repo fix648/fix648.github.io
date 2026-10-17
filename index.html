@@ -77,22 +77,25 @@
 
   <div id="portalApp" class="portal-app hidden">
     <aside id="portalSidebar">
-      <div class="brand">◆ <span>Personal Portal</span></div>
+      <div class="sidebar-brand-row">
+        <div class="brand"><span class="brand-mark">◆</span><span class="brand-label">Personal Portal</span></div>
+        <button id="sidebarToggle" class="sidebar-toggle" type="button" aria-label="Collapse sidebar" title="Collapse sidebar" aria-expanded="true"><span aria-hidden="true">☰</span></button>
+      </div>
       <nav>
-        <button id="navDashboard" class="active">Dashboard</button>
-        <button id="navNotes">Notes</button>
-        <button>Trading Journal</button>
-        <button>Workout Tracker</button>
-        <button>Daily Planner</button>
-        <button>Calculator</button>
-        <button>File Manager</button>
-        <button>Web Tools</button>
+        <button id="navDashboard" class="sidebar-nav-btn active" title="Dashboard" aria-label="Dashboard"><span class="sidebar-icon" aria-hidden="true">▦</span><span class="sidebar-label">Dashboard</span></button>
+        <button id="navNotes" class="sidebar-nav-btn" title="Notes" aria-label="Notes"><span class="sidebar-icon" aria-hidden="true">▤</span><span class="sidebar-label">Notes</span></button>
+        <button class="sidebar-nav-btn" title="Trading Journal" aria-label="Trading Journal"><span class="sidebar-icon" aria-hidden="true">↗</span><span class="sidebar-label">Trading Journal</span></button>
+        <button class="sidebar-nav-btn" title="Workout Tracker" aria-label="Workout Tracker"><span class="sidebar-icon" aria-hidden="true">◎</span><span class="sidebar-label">Workout Tracker</span></button>
+        <button class="sidebar-nav-btn" title="Daily Planner" aria-label="Daily Planner"><span class="sidebar-icon" aria-hidden="true">□</span><span class="sidebar-label">Daily Planner</span></button>
+        <button class="sidebar-nav-btn" title="Calculator" aria-label="Calculator"><span class="sidebar-icon" aria-hidden="true">＋</span><span class="sidebar-label">Calculator</span></button>
+        <button class="sidebar-nav-btn" title="File Manager" aria-label="File Manager"><span class="sidebar-icon" aria-hidden="true">▧</span><span class="sidebar-label">File Manager</span></button>
+        <button class="sidebar-nav-btn" title="Web Tools" aria-label="Web Tools"><span class="sidebar-icon" aria-hidden="true">⌁</span><span class="sidebar-label">Web Tools</span></button>
       </nav>
       <div class="bottom">
-        <button>Permissions</button>
-        <button id="settingsBtn">Settings</button>
-        <button id="logoutBtn">Log out</button>
-        <button id="theme">Dark Mode</button>
+        <button class="sidebar-nav-btn" title="Permissions" aria-label="Permissions"><span class="sidebar-icon" aria-hidden="true">♙</span><span class="sidebar-label">Permissions</span></button>
+        <button id="settingsBtn" class="sidebar-nav-btn" title="Settings" aria-label="Settings"><span class="sidebar-icon" aria-hidden="true">⚙</span><span class="sidebar-label">Settings</span></button>
+        <button id="logoutBtn" class="sidebar-nav-btn" title="Log out" aria-label="Log out"><span class="sidebar-icon" aria-hidden="true">⇥</span><span class="sidebar-label">Log out</span></button>
+        <button id="theme" class="sidebar-nav-btn" title="Dark Mode" aria-label="Dark Mode"><span class="sidebar-icon" aria-hidden="true">◐</span><span class="sidebar-label">Dark Mode</span></button>
       </div>
     </aside>
 

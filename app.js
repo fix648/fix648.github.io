@@ -2594,3 +2594,23 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
   showOnly(session ? "app" : "login");
   if (session) showPortalView("dashboard");
 })();
+
+// v7.5 — Sidebar toggle. UI-only; no database changes.
+(function initPortalSidebarToggle(){
+  const app = document.getElementById("portalApp");
+  const toggle = document.getElementById("sidebarToggle");
+  if (!app || !toggle) return;
+  const key = "portalSidebarCollapsed";
+  const apply = (collapsed) => {
+    app.classList.toggle("sidebar-collapsed", collapsed);
+    toggle.setAttribute("aria-expanded", String(!collapsed));
+    toggle.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
+    toggle.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
+  };
+  try { apply(localStorage.getItem(key) === "true"); } catch { apply(false); }
+  toggle.addEventListener("click", () => {
+    const collapsed = !app.classList.contains("sidebar-collapsed");
+    apply(collapsed);
+    try { localStorage.setItem(key, String(collapsed)); } catch {}
+  });
+})();

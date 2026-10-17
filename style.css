@@ -2183,3 +2183,37 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
 #editorWrap.hidden{
   display:none !important;
 }
+
+/* v7.5 — Collapsible Personal Portal sidebar */
+#portalSidebar{width:230px;transition:width .2s ease;padding:16px 12px;overflow-x:hidden}
+#portalMain{margin-left:230px;min-width:0;transition:margin-left .2s ease}
+.sidebar-brand-row{display:flex;align-items:center;justify-content:space-between;gap:4px;margin-bottom:22px;min-height:38px}
+#portalSidebar .brand{display:flex;align-items:center;gap:8px;padding:0 4px;white-space:nowrap;font-size:16px;min-width:0}
+.brand-mark{color:#316ff6;font-size:20px;flex:none}
+.brand-label{overflow:hidden;text-overflow:ellipsis}
+#portalSidebar .sidebar-toggle{flex:none;width:34px;height:34px;display:grid;place-items:center;border:1px solid #e2e7f0;background:#fff;color:#46536a;border-radius:8px;padding:0;text-align:center;font-size:17px;cursor:pointer}
+#portalSidebar .sidebar-nav-btn{display:flex;align-items:center;gap:12px;width:100%;min-height:40px;padding:9px 10px;white-space:nowrap;font-size:13px;text-align:left}
+#portalSidebar .sidebar-icon{flex:none;display:grid;place-items:center;width:21px;font-size:17px;line-height:1.1}
+#portalSidebar .sidebar-label{overflow:hidden;text-overflow:ellipsis}
+.portal-app.sidebar-collapsed #portalSidebar{width:64px;padding:16px 8px}
+.portal-app.sidebar-collapsed #portalMain{margin-left:64px}
+.portal-app.sidebar-collapsed .sidebar-brand-row{flex-direction:column;gap:8px;margin-bottom:14px}
+.portal-app.sidebar-collapsed #portalSidebar .brand{padding:0;justify-content:center}
+.portal-app.sidebar-collapsed .brand-label,.portal-app.sidebar-collapsed .sidebar-label{display:none!important}
+.portal-app.sidebar-collapsed #portalSidebar .sidebar-nav-btn{justify-content:center;padding:10px 0}
+.portal-app.sidebar-collapsed #portalSidebar .sidebar-icon{width:24px;font-size:19px}
+.portal-app.sidebar-collapsed #portalSidebar .sidebar-toggle{width:36px;height:34px}
+.portal-app.sidebar-collapsed #portalSidebar .bottom{padding-top:10px}
+/* Sidebar collapse gives the Notes grid the recovered width. */
+#portalMain .notes-shell{width:100%;min-width:0}
+@media(max-width:800px){
+ #portalSidebar{width:230px}
+ #portalMain{margin-left:230px}
+ .portal-app.sidebar-collapsed #portalSidebar{width:64px}
+ .portal-app.sidebar-collapsed #portalMain{margin-left:64px}
+ #portalSidebar .sidebar-nav-btn:before{content:none!important}
+ #portalSidebar .sidebar-nav-btn,#portalSidebar .bottom .sidebar-nav-btn{font-size:13px}
+ #portalSidebar .brand-label{display:inline}
+}
+@media(prefers-reduced-motion:reduce){#portalSidebar,#portalMain{transition:none}}
+.dark #portalSidebar .sidebar-toggle{background:#20242b;border-color:#343942;color:#d7e1f2}
