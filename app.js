@@ -259,6 +259,7 @@ function isNotebookInheritedLocked(note){ return !!parentNotebookFor(note)?.is_l
 function isNoteEffectivelyLocked(note){ return !!note.is_locked || isNotebookInheritedLocked(note); }
 
 function notebookActionItems(nb){
+  if(nb.is_fixed_protected) return [];
   return [
     { id:"rename", label:"Rename", icon:"✎", danger:false },
     { id:"color", label:"Assign Color", icon:"◉", danger:false },
@@ -469,6 +470,7 @@ async function renameNotebook(nb){
 }
 
 async function deleteNotebookSafely(nb){
+  if(nb.is_fixed_protected) return centeredMessage("Protected", "Fixed Notebook cannot be deleted.");
   const noteCount = notesState.notebookCounts[nb.id] || 0;
 
   const confirmed = await centeredModal({
@@ -837,7 +839,7 @@ async function ensureDefaultNotebook(){
 async function loadNotebooks(){
   const user = await getCurrentUser();
   const { data, error } = await client.from("notebooks")
-    .select("id,name,icon,sort_order,color,is_favorite,is_locked,is_deleted,trashed_at,created_at,updated_at")
+    .select("id,name,icon,sort_order,color,is_favorite,is_locked,is_deleted,trashed_at,created_at,updated_at,is_fixed_protected")
     .eq("user_id", user.id)
     .eq("is_deleted", false)
     .order("sort_order", { ascending: true })
@@ -845,7 +847,19 @@ async function loadNotebooks(){
   if (error) throw error;
   notesState.notebooks = data || [];
   await ensureDefaultNotebook();
+  await ensureSingleFixedNotebook(user);
   renderNotebooks();
+}
+
+// Creates only one globally fixed notebook, for the first signed-in account that initializes it.
+async function ensureSingleFixedNotebook(user){
+  if(notesState.notebooks.some(nb => nb.is_fixed_protected)) return;
+  const { data, error } = await client.from("notebooks").insert({
+    user_id: user.id, name: "Fixed Notebook", icon: "folder",
+    sort_order: -2147483647, is_fixed_protected: true
+  }).select("id,name,icon,sort_order,color,is_favorite,is_locked,is_deleted,trashed_at,created_at,updated_at,is_fixed_protected").single();
+  if(!error && data) notesState.notebooks.unshift(data);
+  // Unique constraint prevents a second global fixed notebook across accounts.
 }
 
 async function loadNoteCounts(){
@@ -889,7 +903,7 @@ async function loadNotes(){
 function renderNotebooks(){
   const list = $("notebookList");
   list.innerHTML = "";
-  for (const nb of notesState.notebooks) {
+  for (const nb of [...notesState.notebooks].sort((a,b)=>Number(!!b.is_fixed_protected)-Number(!!a.is_fixed_protected))) {
     const count = notesState.selectedNotebookId === "all"
       ? ""
       : "";
@@ -917,6 +931,7 @@ function renderNotebooks(){
 
     const notebookButton = row.querySelector(".notebook-item");
     const dotsButton = row.querySelector(".notebook-menu");
+    if(nb.is_fixed_protected){ dotsButton.remove(); row.querySelector(".notebook-icon").textContent = "📌"; }
 
     notebookButton.addEventListener("click", async () => {
       notesState.selectedNotebookId = nb.id;
@@ -927,6 +942,7 @@ function renderNotebooks(){
     });
 
     notebookButton.addEventListener("contextmenu", (event) => {
+      if(nb.is_fixed_protected){ event.preventDefault(); return; }
       notesState.selectedNotebookId = nb.id;
       renderNotebooks();
       showNotebookContextMenu(event, nb);
