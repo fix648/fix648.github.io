@@ -259,7 +259,10 @@ function isNotebookInheritedLocked(note){ return !!parentNotebookFor(note)?.is_l
 function isNoteEffectivelyLocked(note){ return !!note.is_locked || isNotebookInheritedLocked(note); }
 
 function notebookActionItems(nb){
-  if(nb.is_fixed_protected) return [];
+  if(nb.is_fixed_protected) return [
+    { id:"lock", label:"Lock", icon:"🔒", danger:false },
+    { id:"rename", label:"Rename", icon:"✎", danger:false },
+  ];
   return [
     { id:"rename", label:"Rename", icon:"✎", danger:false },
     { id:"color", label:"Assign Color", icon:"◉", danger:false },
@@ -283,11 +286,10 @@ function showNotebookDotsMenu(button, nb){
   const menu = $("notebookContextMenu");
   menu.dataset.notebookId = nb.id;
   menu.innerHTML = notebookActionMenuHtml(nb);
-  menu.innerHTML = notebookActionMenuHtml(nb);
 
   const rect = button.getBoundingClientRect();
   const menuWidth = 160;
-  const menuHeight = 92;
+  const menuHeight = nb.is_fixed_protected ? 92 : 170;
 
   menu.style.left = `${Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8)}px`;
   menu.style.top = `${Math.min(rect.bottom + 6, window.innerHeight - menuHeight - 8)}px`;
@@ -562,6 +564,7 @@ async function rpcSecurity(name,args){
   return {ok:true,data};
 }
 async function lockNotebook(nb){
+  if(nb.is_fixed_protected) return centeredMessage("Coming Later", "Separate-password locking for Fixed Notebook is not available yet.");
   const p=await passwordModal("Lock Notebook",`Set a password for "${nb.name}". Notes inside it will also be locked.`,"Lock");
   if(p===null)return;
   if(!p||p.length<4)return centeredMessage("Password Required","Use at least 4 characters.");
@@ -931,7 +934,7 @@ function renderNotebooks(){
 
     const notebookButton = row.querySelector(".notebook-item");
     const dotsButton = row.querySelector(".notebook-menu");
-    if(nb.is_fixed_protected){ dotsButton.remove(); row.querySelector(".notebook-icon").textContent = "📌"; }
+    if(nb.is_fixed_protected){ row.querySelector(".notebook-icon").textContent = "📌"; }
 
     notebookButton.addEventListener("click", async () => {
       notesState.selectedNotebookId = nb.id;
@@ -942,7 +945,7 @@ function renderNotebooks(){
     });
 
     notebookButton.addEventListener("contextmenu", (event) => {
-      if(nb.is_fixed_protected){ event.preventDefault(); return; }
+      if(nb.is_fixed_protected){ event.preventDefault(); event.stopPropagation(); showNotebookContextMenu(event, nb); return; }
       notesState.selectedNotebookId = nb.id;
       renderNotebooks();
       showNotebookContextMenu(event, nb);
