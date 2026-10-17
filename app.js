@@ -178,7 +178,8 @@ const notesState = {
 
 const emptyDoc = { type: "doc", content: [{ type: "paragraph" }] };
 
-function showPortalView(view){
+async function showPortalView(view){
+  if(view !== "notes" && !(await relockFixedNotebookOnExit())) return;
   $("dashboardView").classList.toggle("hidden", view !== "dashboard");
   $("notesView").classList.toggle("hidden", view !== "notes");
   $("settingsView").classList.toggle("hidden", view !== "settings");
@@ -567,17 +568,34 @@ async function rpcSecurity(name,args){
   if(error){ showNotesError(error.message); return {ok:false,data:null}; }
   return {ok:true,data};
 }
+let fixedNotebookUnlockSession = null;
+let fixedRelockPending = false;
+async function relockFixedNotebookOnExit(nextId = null){
+  const session = fixedNotebookUnlockSession;
+  if(!session || (nextId !== null && String(nextId) === String(session.id))) return true;
+  if(fixedRelockPending) return false;
+  fixedRelockPending = true;
+  try {
+    const {data,error} = await client.rpc("portal_lock_notebook", {p_notebook_id:session.id,p_password:session.password});
+    if(error) {showNotesError("Automatic relock failed: " + error.message); return false;}
+    fixedNotebookUnlockSession = null;
+    await loadNotebooks();
+    return true;
+  } finally {fixedRelockPending = false;}
+}
 async function lockNotebook(nb){
   const p=await passwordModal("Lock Notebook",`Set a password for "${nb.name}". Notes inside it will also be locked.`,"Lock");
   if(p===null)return;
   if(!p||p.length<4)return centeredMessage("Password Required","Use at least 4 characters.");
   const r=await rpcSecurity("portal_lock_notebook",{p_notebook_id:nb.id,p_password:p}); if(!r.ok)return;
+  if(nb.is_fixed_protected) fixedNotebookUnlockSession = null;
   await loadNotebooks(); await loadNotes(); renderNotebooks(); renderNotes();
 }
 async function unlockNotebook(nb){
   const p=await passwordModal("Unlock Notebook",`Enter the password for "${nb.name}".`,"Unlock"); if(p===null)return;
   const r=await rpcSecurity("portal_unlock_notebook",{p_notebook_id:nb.id,p_password:p});
   if(!r.ok)return; if(!r.data)return centeredMessage("Incorrect Password","The notebook password is incorrect.");
+  if(nb.is_fixed_protected) fixedNotebookUnlockSession = {id:nb.id,password:p};
   await loadNotebooks(); await loadNotes(); renderNotebooks(); renderNotes();
 }
 async function lockNote(note){
@@ -941,6 +959,7 @@ function renderNotebooks(){
     if(nb.is_fixed_protected){ row.querySelector(".notebook-icon").textContent = "📌"; }
 
     notebookButton.addEventListener("click", async () => {
+      if(!(await relockFixedNotebookOnExit(nb.id))) return;
       notesState.selectedNotebookId = nb.id;
       notesState.selectedNoteId = null;
       await loadNotes();
@@ -948,16 +967,18 @@ function renderNotebooks(){
       clearEditorSelection();
     });
 
-    notebookButton.addEventListener("contextmenu", (event) => {
+    notebookButton.addEventListener("contextmenu", async (event) => {
       if(nb.is_fixed_protected){ event.preventDefault(); event.stopPropagation(); showNotebookContextMenu(event, nb); return; }
+      if(!(await relockFixedNotebookOnExit(nb.id))) return;
       notesState.selectedNotebookId = nb.id;
       renderNotebooks();
       showNotebookContextMenu(event, nb);
     });
 
-    dotsButton.addEventListener("click", (event) => {
+    dotsButton.addEventListener("click", async (event) => {
       event.preventDefault();
       event.stopPropagation();
+      if(!(await relockFixedNotebookOnExit(nb.id))) return;
       notesState.selectedNotebookId = nb.id;
       renderNotebooks();
       const liveRow = [...document.querySelectorAll(".notebook-row")].find(
@@ -2577,6 +2598,7 @@ $("backDashboard")?.addEventListener("click", () => showPortalView("dashboard"))
 $("navNotes")?.addEventListener("click", openNotes);
 $("openNotesCard")?.addEventListener("click", (e) => { e.preventDefault(); openNotes(); });
 document.querySelector('[data-notebook="all"]')?.addEventListener("click", async () => {
+  if(!(await relockFixedNotebookOnExit("all"))) return;
   notesState.selectedNotebookId = "all";
   notesState.selectedNoteId = null;
   await loadNotes();
