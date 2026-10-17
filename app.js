@@ -1433,6 +1433,10 @@ async function openTrashView(){
     </div>`;
 
   const close = () => overlay.remove();
+  const refreshTrashView = async () => {
+    overlay.remove();
+    await openTrashView();
+  };
   overlay.querySelector(".trash-close").onclick = close;
   overlay.addEventListener("click", (event) => {
     if (event.target === overlay) close();
@@ -1511,13 +1515,8 @@ async function openTrashView(){
 
         if (error) return showNotesError(error.message);
 
-        row.remove();
         await refreshNotesAfterAction();
-
-        const remainingNotes = notesList.querySelectorAll(".trash-row").length;
-        if (!remainingNotes) {
-          renderCompactEmpty(notesList, "No deleted notes.");
-        }
+        await refreshTrashView();
 
         await centeredMessage("Note Restored", "The note was restored.");
       };
@@ -1539,12 +1538,7 @@ async function openTrashView(){
 
         if (error) return showNotesError(error.message);
 
-        row.remove();
-
-        const remainingNotes = notesList.querySelectorAll(".trash-row").length;
-        if (!remainingNotes) {
-          renderCompactEmpty(notesList, "No deleted notes.");
-        }
+        await refreshTrashView();
       };
 
       notesList.appendChild(row);
@@ -1615,8 +1609,6 @@ async function openTrashView(){
           return showNotesError(notesRestoreError.message);
         }
 
-        row.remove();
-
         await Promise.all([
           loadNotebooks(),
           loadNoteCounts(),
@@ -1626,10 +1618,7 @@ async function openTrashView(){
         renderNotebooks();
         renderNotes();
 
-        const remainingNotebooks = notebooksList.querySelectorAll(".trash-row").length;
-        if (!remainingNotebooks) {
-          renderCompactEmpty(notebooksList, "No deleted notebooks.");
-        }
+        await refreshTrashView();
 
         await centeredMessage(
           "Notebook Restored",
@@ -1661,12 +1650,7 @@ async function openTrashView(){
 
         if (error) return showNotesError(error.message);
 
-        row.remove();
-
-        const remainingNotebooks = notebooksList.querySelectorAll(".trash-row").length;
-        if (!remainingNotebooks) {
-          renderCompactEmpty(notebooksList, "No deleted notebooks.");
-        }
+        await refreshTrashView();
       };
 
       notebooksList.appendChild(row);
