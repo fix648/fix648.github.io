@@ -95,13 +95,25 @@ document.querySelectorAll("[data-settings-category]").forEach(button => {
     $("settingsCategoryTitle").textContent = category;
   });
 });
+document.querySelectorAll("[data-toggle-field]").forEach(button => {
+  button.addEventListener("click", () => {
+    const input = $(button.dataset.toggleField);
+    if (!input) return;
+    const visible = input.type === "text";
+    input.type = visible ? "password" : "text";
+    button.setAttribute("aria-pressed", String(!visible));
+    button.setAttribute("aria-label", visible ? "Show value" : "Hide value");
+    button.title = visible ? "Show" : "Hide";
+    button.textContent = visible ? "👁" : "◉";
+  });
+});
 $("notesNewPassword")?.addEventListener("input", () => {
   const value = $("notesNewPassword").value;
   let score = 0;
   if (value.length >= 4) score++;
   if (value.length >= 8) score++;
   if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++;
-  if (/\\d/.test(value) && /[^A-Za-z0-9]/.test(value)) score++;
+  if (/\d/.test(value) && /[^A-Za-z0-9]/.test(value)) score++;
   $("notesPasswordStrength").value = score;
   $("notesStrengthLabel").textContent = ["—", "Weak", "Fair", "Good", "Strong"][score];
 });
@@ -132,9 +144,10 @@ $("notesPasswordSettingsForm")?.addEventListener("submit", async (event) => {
     $("notesOldPassword").value = "";
     $("notesNewPassword").value = "";
     $("notesRepeatPassword").value = "";
+    $("notesPasswordHint").value = "";
     $("notesPasswordStrength").value = 0;
     $("notesStrengthLabel").textContent = "—";
-    feedback.textContent = "Notes password updated successfully.";
+    feedback.textContent = "To open Notes password updated successfully.";
     feedback.classList.add("success");
   } finally { save.disabled = false; }
 });

@@ -2299,3 +2299,12 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
 .dark .settings-field label,.dark .settings-heading p{color:#b9c0ca}
 .dark .settings-field input{background:#202329;border-color:#343942;color:#e9ebef}
 @media(max-width:800px){.settings-layout{grid-template-columns:1fr}.portal-settings .settings-nav{border-right:0;border-bottom:1px solid #e3e7ed;display:flex;flex-direction:row;overflow-x:auto;white-space:nowrap;padding-bottom:8px}.settings-field{grid-template-columns:1fr;gap:5px}.settings-feedback,.settings-save-btn{margin-left:0}.settings-strength{grid-column:1}}
+
+/* v7.12: OpenNotes-only settings and reveal controls */
+.portal-settings .settings-nav{min-width:120px}
+.settings-password-wrap{position:relative;display:block;min-width:0}
+.settings-password-wrap input{padding-right:46px}
+.settings-password-wrap .settings-eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);width:36px;height:30px;display:grid;place-items:center;border:0;background:transparent;color:#667085;border-radius:5px;cursor:pointer;font-size:15px}
+.settings-password-wrap .settings-eye:hover{background:#edf2fa;color:#245bd6}
+.dark .settings-password-wrap .settings-eye{color:#c6ced9}
+.dark .settings-password-wrap .settings-eye:hover{background:#303746}

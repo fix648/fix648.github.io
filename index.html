@@ -105,24 +105,15 @@
         <div class="settings-layout">
           <aside class="settings-nav" aria-label="Settings categories">
             <button class="settings-category active" type="button" data-settings-category="OpenNotes">OpenNotes</button>
-            <button class="settings-category" type="button" data-settings-category="Domain names">Domain names</button>
-            <button class="settings-category" type="button" data-settings-category="FTP users">FTP users</button>
-            <button class="settings-category" type="button" data-settings-category="Databases">Databases</button>
-            <button class="settings-category" type="button" data-settings-category="Backups">Backups</button>
-            <button class="settings-category" type="button" data-settings-category="SSH">SSH</button>
-            <button class="settings-category" type="button" data-settings-category="SSL & HTTPS">SSL &amp; HTTPS</button>
-            <button class="settings-category" type="button" data-settings-category="Security">Security</button>
-            <button class="settings-category" type="button" data-settings-category="Performance & Caching">Performance &amp; Caching</button>
-            <button class="settings-category" type="button" data-settings-category="Site settings">Site settings</button>
           </aside>
           <div class="settings-content">
             <div class="settings-tabs"><button type="button" class="active">Open Password</button></div>
             <section id="openNotesSettings">
               <form id="notesPasswordSettingsForm" autocomplete="off">
-                <div class="settings-field"><label for="notesOldPassword">Old Password</label><input id="notesOldPassword" type="password" autocomplete="current-password" required /></div>
-                <div class="settings-field"><label for="notesNewPassword">New Password</label><input id="notesNewPassword" type="password" autocomplete="new-password" minlength="4" required /><div class="settings-strength"><span>Password strength</span><meter id="notesPasswordStrength" min="0" max="4" value="0"></meter><small id="notesStrengthLabel">—</small></div></div>
-                <div class="settings-field"><label for="notesRepeatPassword">Repeat Password</label><input id="notesRepeatPassword" type="password" autocomplete="new-password" minlength="4" required /></div>
-                <div class="settings-field"><label for="notesPasswordHint">Password Hint</label><input id="notesPasswordHint" type="text" maxlength="150" placeholder="Optional hint (never enter your password)" /></div>
+                <div class="settings-field"><label for="notesOldPassword">Old Password</label><span class="settings-password-wrap"><input id="notesOldPassword" type="password" autocomplete="current-password" required /><button type="button" class="settings-eye" data-toggle-field="notesOldPassword" aria-label="Show notesOldPassword" aria-pressed="false" title="Show / hide">👁</button></span></div>
+                <div class="settings-field"><label for="notesNewPassword">New Password</label><span class="settings-password-wrap"><input id="notesNewPassword" type="password" autocomplete="new-password" minlength="4" required /><button type="button" class="settings-eye" data-toggle-field="notesNewPassword" aria-label="Show notesNewPassword" aria-pressed="false" title="Show / hide">👁</button></span><div class="settings-strength"><span>Password strength</span><meter id="notesPasswordStrength" min="0" max="4" value="0"></meter><small id="notesStrengthLabel">—</small></div></div>
+                <div class="settings-field"><label for="notesRepeatPassword">Repeat Password</label><span class="settings-password-wrap"><input id="notesRepeatPassword" type="password" autocomplete="new-password" minlength="4" required /><button type="button" class="settings-eye" data-toggle-field="notesRepeatPassword" aria-label="Show notesRepeatPassword" aria-pressed="false" title="Show / hide">👁</button></span></div>
+                <div class="settings-field"><label for="notesPasswordHint">Password Hint</label><span class="settings-password-wrap"><input id="notesPasswordHint" type="text" maxlength="150" placeholder="Optional hint (never enter your password)" /><button type="button" class="settings-eye" data-toggle-field="notesPasswordHint" aria-label="Show notesPasswordHint" aria-pressed="false" title="Show / hide">👁</button></span></div>
                 <div id="notesSettingsMessage" class="settings-feedback" role="status" aria-live="polite"></div>
                 <button id="saveNotesSettingsBtn" type="submit" class="settings-save-btn">Set password</button>
               </form>
