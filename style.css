@@ -2337,3 +2337,13 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
  #notesView .notes-shell{grid-template-columns:minmax(180px,28%) minmax(230px,1fr)!important;}
 }
 @media(max-width:620px){#notesView .notes-shell{display:block!important;}}
+
+/* v7.16 — Settings navigation and explicit display preference save */
+.portal-settings .settings-heading-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+.portal-settings .settings-back-notes{border:1px solid #cbd5e1;background:transparent;border-radius:6px;color:inherit;padding:9px 14px;cursor:pointer;font-size:13px;font-weight:600;}
+.portal-settings .settings-back-notes:hover{border-color:#2864e8;color:#2864e8;}
+.portal-settings .display-settings-actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px;}
+.portal-settings .display-settings-actions .settings-save-btn{margin:0;padding:10px 16px;}
+.portal-settings #resetDisplaySettings{background:transparent;color:#2864e8;border:1px solid #2864e8;}
+.portal-settings #saveDisplaySettings{background:#2864e8;color:#fff;}
+.portal-settings .display-settings-feedback{min-height:18px;font-size:12px;color:#2864e8;margin:12px 0 0;}

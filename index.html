@@ -101,7 +101,7 @@
 
     <main id="portalMain">
       <section id="settingsView" class="portal-settings hidden">
-        <div class="settings-heading"><h1>Settings</h1><p>Manage your Personal Portal preferences.</p></div>
+        <div class="settings-heading"><div class="settings-heading-top"><h1>Settings</h1><button type="button" id="backToNotesFromSettings" class="settings-back-notes">← Back to Notes</button></div><p>Manage your Personal Portal preferences.</p></div>
         <div class="settings-layout">
           <aside class="settings-nav" aria-label="Settings categories">
             <button class="settings-category active" type="button" data-settings-category="OpenNotes">OpenNotes</button>
@@ -124,7 +124,7 @@
               <p class="display-help">Change list text sizes. Settings are saved in this browser.</p>
               <div class="display-control"><label for="notebookFontSize">Notebook name size <output id="notebookFontValue">13px</output></label><input type="range" id="notebookFontSize" min="12" max="20" step="1" value="13"></div>
               <div class="display-control"><label for="noteFontSize">Note title size <output id="noteFontValue">13px</output></label><input type="range" id="noteFontSize" min="12" max="20" step="1" value="13"></div>
-              <button type="button" id="resetDisplaySettings" class="settings-save-btn">Reset to default</button>
+              <div class="display-settings-actions"><button type="button" id="resetDisplaySettings" class="settings-save-btn">Reset to default</button><button type="button" id="saveDisplaySettings" class="settings-save-btn">Save settings</button></div><p id="displaySettingsFeedback" class="display-settings-feedback" role="status" aria-live="polite"></p>
             </section>
             <section id="settingsComingSoon" class="settings-coming-soon hidden"><h2 id="settingsCategoryTitle"></h2><p>This section is reserved for future features.</p></section>
           </div>

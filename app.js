@@ -86,6 +86,7 @@ $("settingsBtn")?.addEventListener("click", () => {
   showPortalView("settings");
   document.querySelector('[data-settings-category="OpenNotes"]')?.click();
 });
+$("backToNotesFromSettings")?.addEventListener("click", () => showPortalView("notes"));
 document.querySelectorAll("[data-settings-category]").forEach(button => {
   button.addEventListener("click", () => {
     const category = button.dataset.settingsCategory;
@@ -2734,7 +2735,8 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
   const defaults = {notebookFont:13, noteFont:13, notebooksWidth:285, notesWidth:325};
   let prefs = {...defaults};
   try { const stored = JSON.parse(localStorage.getItem(key) || '{}'); for(const k of Object.keys(defaults)) if(Number.isFinite(+stored[k])) prefs[k] = +stored[k]; } catch (_) {}
-  const save = () => { try {localStorage.setItem(key,JSON.stringify(prefs));} catch (_) {} };
+  const save = () => { try {localStorage.setItem(key,JSON.stringify(prefs));return true;} catch (_) {return false;} };
+  const feedback = (message) => { const el=document.getElementById("displaySettingsFeedback");if(el)el.textContent=message; };
   const clamp = (n,min,max) => Math.min(max,Math.max(min,n));
   function applyFonts(){
     prefs.notebookFont=clamp(prefs.notebookFont,12,20);
@@ -2759,11 +2761,12 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
   requestAnimationFrame(applyWidths);
   window.addEventListener('resize',applyWidths);
   [['notebookFontSize','notebookFont'],['noteFontSize','noteFont']].forEach(([id,k])=>{
-    document.getElementById(id)?.addEventListener('input',e=>{prefs[k]=Number(e.target.value);applyFonts();save();});
+    document.getElementById(id)?.addEventListener('input',e=>{prefs[k]=Number(e.target.value);applyFonts();feedback('Unsaved changes');});
   });
   document.getElementById('resetDisplaySettings')?.addEventListener('click',()=>{
-    prefs.notebookFont=defaults.notebookFont;prefs.noteFont=defaults.noteFont;applyFonts();save();
+    prefs.notebookFont=defaults.notebookFont;prefs.noteFont=defaults.noteFont;applyFonts();feedback('Default sizes selected. Click Save settings to keep them.');
   });
+  document.getElementById('saveDisplaySettings')?.addEventListener('click',()=>{feedback(save()?'Display settings saved successfully.':'Unable to save in this browser.');});
   shell.querySelectorAll('.pane-resizer').forEach(handle=>{
     const which=handle.dataset.resizer;
     handle.addEventListener('pointerdown',e=>{
