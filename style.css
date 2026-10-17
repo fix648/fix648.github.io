@@ -2265,3 +2265,37 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
 .portal-app.sidebar-collapsed #portalSidebar .sidebar-toggle{display:none!important}
 .portal-app.sidebar-collapsed .sidebar-brand-row{margin-bottom:14px}
 #portalSidebar .brand-expand:focus-visible{outline:2px solid #316ff6;outline-offset:4px}
+
+
+/* v7.11: Settings screen; scoped to avoid interfering with portal sidebar. */
+.portal-settings{min-height:calc(100vh - 68px);width:100%}
+.settings-heading{margin-bottom:20px}
+.settings-heading h1{font-size:25px}
+.settings-heading p{font-size:13px;color:#667085;margin:6px 0 0}
+.settings-layout{display:grid;grid-template-columns:190px minmax(0,1fr);gap:22px;align-items:start}
+.portal-settings .settings-nav{position:static;inset:auto;z-index:auto;width:auto;min-height:0;height:auto;display:flex;flex-direction:column;padding:0 10px 0 0;border-right:1px solid #e3e7ed;background:transparent;gap:3px}
+.portal-settings .settings-category{width:100%;border:0;border-radius:5px;padding:9px 11px;font-size:12px;cursor:pointer;text-align:left;background:transparent;color:#475467}
+.portal-settings .settings-category.active{background:#2165e9;color:#fff}
+.settings-content{min-width:0;background:#fff;border:1px solid #e2e7ef;border-radius:8px;padding:18px 20px 24px}
+.settings-tabs{display:flex;border-bottom:1px solid #e5e7eb;margin-bottom:22px;gap:8px}
+.settings-tabs button{border:0;border-bottom:2px solid #2864e8;background:#eaf1ff;color:#245bd6;padding:10px 14px;font-size:12px;font-weight:650;border-radius:5px 5px 0 0}
+.settings-field{display:grid;grid-template-columns:150px minmax(180px,350px) minmax(0,1fr);gap:12px;align-items:center;margin:0 0 16px}
+.settings-field label{font-size:12px;color:#344054}
+.settings-field input{width:100%;min-width:0;height:36px;border:1px solid #d0d5dd;border-radius:5px;padding:7px 10px;font-size:13px;background:#fff;color:#17191d}
+.settings-field input:focus{outline:2px solid #aac5ff;border-color:#2864e8}
+.settings-strength{display:flex;align-items:center;gap:8px;font-size:11px;color:#667085;white-space:nowrap}
+.settings-strength meter{width:80px;height:11px}
+.settings-strength small{font-size:10px}
+.settings-feedback{font-size:12px;color:#b42318;min-height:18px;margin:8px 0 0 162px}
+.settings-feedback.success{color:#067647}
+.settings-save-btn{margin:10px 0 0 162px;background:#2864e8;border:0;border-radius:5px;padding:9px 18px;color:#fff;font-size:12px;cursor:pointer}
+.settings-save-btn:disabled{opacity:.6}
+.settings-coming-soon h2{font-size:17px;margin:0 0 8px}
+.settings-coming-soon p{font-size:13px;color:#667085}
+.dark .settings-content{background:#1a1d22;border-color:#343942}
+.dark .portal-settings .settings-nav{border-color:#343942}
+.dark .portal-settings .settings-category{color:#d4d8df}
+.dark .portal-settings .settings-category.active{background:#2864e8;color:#fff}
+.dark .settings-field label,.dark .settings-heading p{color:#b9c0ca}
+.dark .settings-field input{background:#202329;border-color:#343942;color:#e9ebef}
+@media(max-width:800px){.settings-layout{grid-template-columns:1fr}.portal-settings .settings-nav{border-right:0;border-bottom:1px solid #e3e7ed;display:flex;flex-direction:row;overflow-x:auto;white-space:nowrap;padding-bottom:8px}.settings-field{grid-template-columns:1fr;gap:5px}.settings-feedback,.settings-save-btn{margin-left:0}.settings-strength{grid-column:1}}

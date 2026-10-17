@@ -82,23 +82,62 @@ $("otpForm")?.addEventListener("submit", async (e) => {
 $("resendBtn")?.addEventListener("click", async () => { const loginId = sessionStorage.getItem("portalLoginId") || $("loginId").value.trim(); const { data } = await callPortalAuth({ action: "resend", loginId }); setMessage($("otpMessage"), data?.message || "Unable to resend code.", data?.success ? "ok" : "error"); });
 
 $("logoutBtn")?.addEventListener("click", async () => { await client.auth.signOut(); sessionStorage.removeItem("portalLoginId"); showOnly("login"); });
-$("settingsBtn")?.addEventListener("click", async () => {
-  const current = await passwordModal("Notes Settings", "Current Notes password (required to change it).", "Continue");
-  if (current === null) return;
-  const next = await passwordModal("Change Notes Password", "Enter a new Notes password (minimum 4 characters).", "Continue");
-  if (next === null) return;
-  if (next.length < 4) { await centeredMessage("Password too short", "Use at least 4 characters."); return; }
-  const again = await passwordModal("Confirm New Password", "Enter your new Notes password again.", "Change Password");
-  if (again === null) return;
-  if (again !== next) { await centeredMessage("Not changed", "New passwords do not match."); return; }
-  const { data, error } = await client.rpc("portal_notes_password_change", { p_old_password: current, p_new_password: next });
-  if (error || data !== true) {
-    await centeredMessage("Password not changed", error?.message || "Current password is incorrect, or Notes password has not been created.");
-    return;
-  }
-  await centeredMessage("Password updated", "Your Notes password has been changed.");
+$("settingsBtn")?.addEventListener("click", () => {
+  showPortalView("settings");
+  document.querySelector('[data-settings-category="OpenNotes"]')?.click();
 });
-
+document.querySelectorAll("[data-settings-category]").forEach(button => {
+  button.addEventListener("click", () => {
+    const category = button.dataset.settingsCategory;
+    document.querySelectorAll("[data-settings-category]").forEach(b => b.classList.toggle("active", b === button));
+    $("openNotesSettings").classList.toggle("hidden", category !== "OpenNotes");
+    $("settingsComingSoon").classList.toggle("hidden", category === "OpenNotes");
+    $("settingsCategoryTitle").textContent = category;
+  });
+});
+$("notesNewPassword")?.addEventListener("input", () => {
+  const value = $("notesNewPassword").value;
+  let score = 0;
+  if (value.length >= 4) score++;
+  if (value.length >= 8) score++;
+  if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++;
+  if (/\\d/.test(value) && /[^A-Za-z0-9]/.test(value)) score++;
+  $("notesPasswordStrength").value = score;
+  $("notesStrengthLabel").textContent = ["—", "Weak", "Fair", "Good", "Strong"][score];
+});
+$("notesPasswordSettingsForm")?.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const oldPassword = $("notesOldPassword").value;
+  const newPassword = $("notesNewPassword").value;
+  const repeat = $("notesRepeatPassword").value;
+  const feedback = $("notesSettingsMessage");
+  feedback.className = "settings-feedback";
+  if (newPassword.length < 4) { feedback.textContent = "New password must contain at least 4 characters."; return; }
+  if (newPassword !== repeat) { feedback.textContent = "New password and Repeat Password do not match."; return; }
+  const save = $("saveNotesSettingsBtn");
+  save.disabled = true;
+  try {
+    const { data, error } = await client.rpc("portal_notes_password_change", {
+      p_old_password: oldPassword, p_new_password: newPassword
+    });
+    if (error || data !== true) {
+      feedback.textContent = error?.message || "Old password is incorrect, or Notes password has not been set.";
+      return;
+    }
+    // Hint is saved only on this device, never in the password database.
+    try {
+      const { data: auth } = await client.auth.getUser();
+      if (auth?.user?.id) localStorage.setItem("portalNotesHint:" + auth.user.id, $("notesPasswordHint").value.trim());
+    } catch {}
+    $("notesOldPassword").value = "";
+    $("notesNewPassword").value = "";
+    $("notesRepeatPassword").value = "";
+    $("notesPasswordStrength").value = 0;
+    $("notesStrengthLabel").textContent = "—";
+    feedback.textContent = "Notes password updated successfully.";
+    feedback.classList.add("success");
+  } finally { save.disabled = false; }
+});
 // ==============================
 // NOTES MODULE
 // ==============================
@@ -125,8 +164,10 @@ const emptyDoc = { type: "doc", content: [{ type: "paragraph" }] };
 function showPortalView(view){
   $("dashboardView").classList.toggle("hidden", view !== "dashboard");
   $("notesView").classList.toggle("hidden", view !== "notes");
+  $("settingsView").classList.toggle("hidden", view !== "settings");
   $("navDashboard").classList.toggle("active", view === "dashboard");
   $("navNotes").classList.toggle("active", view === "notes");
+  $("settingsBtn").classList.toggle("active", view === "settings");
 }
 
 function showNotesError(message){
