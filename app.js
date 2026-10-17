@@ -576,7 +576,7 @@ async function relockFixedNotebookOnExit(nextId = null){
   if(fixedRelockPending) return false;
   fixedRelockPending = true;
   try {
-    const {data,error} = await client.rpc("portal_lock_notebook", {p_notebook_id:session.id,p_password:session.password});
+    const {data,error} = await client.rpc("portal_fixed_notebook_relock", {p_notebook_id:session.id});
     if(error) {showNotesError("Automatic relock failed: " + error.message); return false;}
     fixedNotebookUnlockSession = null;
     await loadNotebooks();
@@ -593,9 +593,9 @@ async function lockNotebook(nb){
 }
 async function unlockNotebook(nb){
   const p=await passwordModal("Unlock Notebook",`Enter the password for "${nb.name}".`,"Unlock"); if(p===null)return;
-  const r=await rpcSecurity("portal_unlock_notebook",{p_notebook_id:nb.id,p_password:p});
+  const r=await rpcSecurity(nb.is_fixed_protected ? "portal_fixed_notebook_unlock" : "portal_unlock_notebook",{p_notebook_id:nb.id,p_password:p});
   if(!r.ok)return; if(!r.data)return centeredMessage("Incorrect Password","The notebook password is incorrect.");
-  if(nb.is_fixed_protected) fixedNotebookUnlockSession = {id:nb.id,password:p};
+  if(nb.is_fixed_protected) fixedNotebookUnlockSession = {id:nb.id};
   await loadNotebooks(); await loadNotes(); renderNotebooks(); renderNotes();
 }
 async function lockNote(note){
@@ -2551,6 +2551,18 @@ async function checkNotesGate(){
   if (verified !== true) { await centeredMessage("Incorrect Password", "Notes will remain closed."); return false; }
   return true;
 }
+// Re-lock persisted fixed notebook before any Notes UI/data is loaded.
+async function relockFixedNotebookOnStartup(){
+  const user = await getCurrentUser();
+  const {data,error} = await client.from("notebooks")
+    .select("id,is_locked").eq("user_id",user.id).eq("is_fixed_protected",true).limit(1);
+  if(error) throw error;
+  const fixed = data?.[0];
+  if(!fixed || fixed.is_locked) return;
+  const {error:relockError} = await client.rpc("portal_fixed_notebook_relock",{p_notebook_id:fixed.id});
+  if(relockError) throw new Error("Fixed Notebook startup relock failed: " + relockError.message);
+  fixedNotebookUnlockSession = null;
+}
 async function openNotes(){
   if (notesGateBusy) return;
   notesGateBusy = true;
@@ -2563,6 +2575,7 @@ async function openNotes(){
   bindTrashButton();
 
   try {
+    await relockFixedNotebookOnStartup();
     await processDueAutoDeletesClient();
     // Render database-backed panes as soon as possible.
     await Promise.all([
@@ -2823,3 +2836,10 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
     });
   });
 })();
+
+// Best-effort background lock; page close/reload is enforced at next Notes opening.
+document.addEventListener("visibilitychange", () => {
+  if(document.visibilityState === "hidden" && fixedNotebookUnlockSession){
+    relockFixedNotebookOnExit().catch(e => console.warn("Background relock:",e));
+  }
+});
