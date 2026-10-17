@@ -2308,3 +2308,32 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
 .settings-password-wrap .settings-eye:hover{background:#edf2fa;color:#245bd6}
 .dark .settings-password-wrap .settings-eye{color:#c6ced9}
 .dark .settings-password-wrap .settings-eye:hover{background:#303746}
+
+
+/* v7.15 — resizable columns, font settings, and count alignment */
+#notesView .notes-shell{--notebook-list-font:13px;--note-list-font:13px;}
+#notesView .pane-resizer{width:7px;min-width:7px;cursor:col-resize;background:#f1f4f8;position:relative;z-index:3;touch-action:none;user-select:none;border-left:1px solid #e6e9ef;border-right:1px solid #e6e9ef;}
+#notesView .pane-resizer:hover,#notesView .pane-resizer.dragging,#notesView .pane-resizer:focus-visible{background:#a9c4ff;outline:none;}
+#notesView .pane-resizer::after{content:'';position:absolute;width:2px;height:34px;top:50%;left:2px;transform:translateY(-50%);border-radius:2px;background:#9baac4;}
+#notesView .notebook-row{grid-template-columns:minmax(0,1fr) 28px;min-width:0;}
+#notesView .notebook-item{min-width:0;grid-template-columns:20px minmax(0,1fr) auto;gap:5px;align-items:center;}
+#notesView .notebook-row.has-lock .notebook-item{grid-template-columns:20px minmax(0,1fr) auto auto;}
+#notesView .notebook-name{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--notebook-list-font)!important;}
+#notesView .notebook-count{grid-column:-2;white-space:nowrap;align-self:center;line-height:1.2;}
+#notesView .notebook-lock-indicator{font-size:11px;line-height:1;white-space:nowrap;}
+#notesView .note-card strong{font-size:var(--note-list-font)!important;line-height:1.4;}
+#notesView .note-list-pane{display:flex;flex-direction:column;min-width:0;}
+#notesView .note-list{max-height:none!important;min-height:0;flex:1;overflow-y:auto;align-content:start;align-items:start;grid-auto-rows:max-content;}
+#notesView .notebook-pane,#notesView .note-list-pane{border-right:0!important;}
+.portal-settings .display-help{font-size:12px;color:#697386;margin:6px 0 22px;}
+.portal-settings .display-control{max-width:430px;margin:20px 0;}
+.portal-settings .display-control label{display:flex;justify-content:space-between;gap:15px;font-size:13px;font-weight:600;margin-bottom:12px;}
+.portal-settings .display-control input{width:100%;accent-color:#2864e8;cursor:pointer;}
+.portal-settings .display-control output{font-variant-numeric:tabular-nums;color:#2864e8;}
+.dark #notesView .pane-resizer{background:#2c3442;border-color:#3a4454;}
+.dark #notesView .pane-resizer:hover,.dark #notesView .pane-resizer.dragging{background:#4667a5;}
+@media(max-width:1050px){
+ #notesView .pane-resizer{display:none!important;}
+ #notesView .notes-shell{grid-template-columns:minmax(180px,28%) minmax(230px,1fr)!important;}
+}
+@media(max-width:620px){#notesView .notes-shell{display:block!important;}}

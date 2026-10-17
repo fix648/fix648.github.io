@@ -91,7 +91,8 @@ document.querySelectorAll("[data-settings-category]").forEach(button => {
     const category = button.dataset.settingsCategory;
     document.querySelectorAll("[data-settings-category]").forEach(b => b.classList.toggle("active", b === button));
     $("openNotesSettings").classList.toggle("hidden", category !== "OpenNotes");
-    $("settingsComingSoon").classList.toggle("hidden", category === "OpenNotes");
+    $("displaySettings").classList.toggle("hidden", category !== "Display");
+    $("settingsComingSoon").classList.toggle("hidden", category === "OpenNotes" || category === "Display");
     $("settingsCategoryTitle").textContent = category;
   });
 });
@@ -922,6 +923,7 @@ function renderNotebooks(){
     `;
     row.querySelector(".notebook-name").textContent = nb.name;
     if(nb.is_locked){
+      row.classList.add("has-lock");
       const lock=document.createElement("span"); lock.className="notebook-lock-indicator"; lock.textContent="🔒";
       row.querySelector(".notebook-name").after(lock);
     }
@@ -2720,5 +2722,70 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
     const collapsed = !app.classList.contains("sidebar-collapsed");
     apply(collapsed);
     try { localStorage.setItem(key, String(collapsed)); } catch {}
+  });
+})();
+
+
+/* v7.15 — resizable notebook / note list panels and display preferences */
+(function initNotesDisplayAndResize(){
+  const shell = document.querySelector('#notesView .notes-shell');
+  if (!shell) return;
+  const key = 'portal.notes.display.v7_15';
+  const defaults = {notebookFont:13, noteFont:13, notebooksWidth:285, notesWidth:325};
+  let prefs = {...defaults};
+  try { const stored = JSON.parse(localStorage.getItem(key) || '{}'); for(const k of Object.keys(defaults)) if(Number.isFinite(+stored[k])) prefs[k] = +stored[k]; } catch (_) {}
+  const save = () => { try {localStorage.setItem(key,JSON.stringify(prefs));} catch (_) {} };
+  const clamp = (n,min,max) => Math.min(max,Math.max(min,n));
+  function applyFonts(){
+    prefs.notebookFont=clamp(prefs.notebookFont,12,20);
+    prefs.noteFont=clamp(prefs.noteFont,12,20);
+    shell.style.setProperty('--notebook-list-font',prefs.notebookFont+'px');
+    shell.style.setProperty('--note-list-font',prefs.noteFont+'px');
+    const a=document.getElementById('notebookFontSize'), b=document.getElementById('noteFontSize');
+    if(a) a.value=prefs.notebookFont;
+    if(b) b.value=prefs.noteFont;
+    if(document.getElementById('notebookFontValue')) document.getElementById('notebookFontValue').textContent=prefs.notebookFont+'px';
+    if(document.getElementById('noteFontValue')) document.getElementById('noteFontValue').textContent=prefs.noteFont+'px';
+  }
+  function desktop(){return window.matchMedia('(min-width: 1051px)').matches;}
+  function applyWidths(){
+    if(!desktop()){shell.style.removeProperty('grid-template-columns');return;}
+    const total=shell.clientWidth;
+    prefs.notebooksWidth=clamp(prefs.notebooksWidth,190,Math.max(190,total-540));
+    prefs.notesWidth=clamp(prefs.notesWidth,220,Math.max(220,total-prefs.notebooksWidth-280));
+    shell.style.setProperty('grid-template-columns',`${prefs.notebooksWidth}px 7px ${prefs.notesWidth}px 7px minmax(0,1fr)`,'important');
+  }
+  applyFonts();
+  requestAnimationFrame(applyWidths);
+  window.addEventListener('resize',applyWidths);
+  [['notebookFontSize','notebookFont'],['noteFontSize','noteFont']].forEach(([id,k])=>{
+    document.getElementById(id)?.addEventListener('input',e=>{prefs[k]=Number(e.target.value);applyFonts();save();});
+  });
+  document.getElementById('resetDisplaySettings')?.addEventListener('click',()=>{
+    prefs.notebookFont=defaults.notebookFont;prefs.noteFont=defaults.noteFont;applyFonts();save();
+  });
+  shell.querySelectorAll('.pane-resizer').forEach(handle=>{
+    const which=handle.dataset.resizer;
+    handle.addEventListener('pointerdown',e=>{
+      if(!desktop()) return;
+      e.preventDefault();
+      handle.setPointerCapture(e.pointerId);
+      handle.classList.add('dragging');
+      const startX=e.clientX, a=prefs.notebooksWidth,b=prefs.notesWidth;
+      const move=ev=>{
+        const dx=ev.clientX-startX;
+        if(which==='notebooks') prefs.notebooksWidth=clamp(a+dx,190,Math.max(190,shell.clientWidth-b-290));
+        else prefs.notesWidth=clamp(b+dx,220,Math.max(220,shell.clientWidth-a-290));
+        applyWidths();
+      };
+      const end=()=>{handle.classList.remove('dragging');handle.removeEventListener('pointermove',move);handle.removeEventListener('pointerup',end);handle.removeEventListener('pointercancel',end);save();};
+      handle.addEventListener('pointermove',move);handle.addEventListener('pointerup',end);handle.addEventListener('pointercancel',end);
+    });
+    handle.addEventListener('keydown',e=>{
+      if(!desktop() || !['ArrowLeft','ArrowRight'].includes(e.key))return;
+      e.preventDefault();const dx=e.key==='ArrowRight'?20:-20;
+      if(which==='notebooks')prefs.notebooksWidth+=dx;else prefs.notesWidth+=dx;
+      applyWidths();save();
+    });
   });
 })();
