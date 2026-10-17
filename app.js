@@ -2608,6 +2608,12 @@ $("noteTitle")?.addEventListener("input", scheduleSave);
     toggle.title = collapsed ? "Expand sidebar" : "Collapse sidebar";
   };
   try { apply(localStorage.getItem(key) === "true"); } catch { apply(false); }
+  const brandExpand = document.getElementById("sidebarBrandExpand");
+  if (brandExpand) brandExpand.addEventListener("click", () => {
+    if (!app.classList.contains("sidebar-collapsed")) return;
+    apply(false);
+    try { localStorage.setItem(key, "false"); } catch {}
+  });
   toggle.addEventListener("click", () => {
     const collapsed = !app.classList.contains("sidebar-collapsed");
     apply(collapsed);

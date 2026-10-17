@@ -2257,3 +2257,11 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
  #notesView .notebook-pane{min-height:280px!important;}
  #notesView .note-list-pane{min-height:300px!important;}
 }
+
+/* v7.7 — collapsed: logo expands sidebar; hide hamburger */
+#portalSidebar .brand-expand{appearance:none;border:0;background:transparent;color:#316ff6;font:inherit;font-size:20px;line-height:1;padding:0;margin:0;cursor:default;flex:none;border-radius:5px}
+.portal-app.sidebar-collapsed #portalSidebar .brand-expand{cursor:pointer}
+.portal-app.sidebar-collapsed #portalSidebar .brand-expand:hover{background:#eaf1ff}
+.portal-app.sidebar-collapsed #portalSidebar .sidebar-toggle{display:none!important}
+.portal-app.sidebar-collapsed .sidebar-brand-row{margin-bottom:14px}
+#portalSidebar .brand-expand:focus-visible{outline:2px solid #316ff6;outline-offset:4px}
