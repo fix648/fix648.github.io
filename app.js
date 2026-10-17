@@ -2414,7 +2414,37 @@ async function processDueAutoDeletesClient(){
   }
 }
 
+// v7.9: separate Notes gate; server verifies a salted password hash.
+let notesGateBusy = false;
+async function checkNotesGate(){
+  const { data: sessionData } = await client.auth.getUser();
+  if (!sessionData?.user) { await centeredMessage("Sign in required", "Please sign in again."); return false; }
+  const { data: configured, error: statusError } = await client.rpc("portal_notes_password_exists");
+  if (statusError) { await centeredMessage("Notes security unavailable", "Run the v7.9 SQL setup first. " + statusError.message); return false; }
+  if (!configured) {
+    const first = await passwordModal("Create Notes Password", "Set a separate Notes password (minimum 8 characters). This is required before opening Notes.", "Continue");
+    if (first === null) return false;
+    if (first.length < 8) { await centeredMessage("Password too short", "Use at least 8 characters."); return false; }
+    const confirm = await passwordModal("Confirm Notes Password", "Enter the same password again.", "Set Password");
+    if (confirm === null || confirm !== first) { await centeredMessage("Not saved", "Passwords did not match."); return false; }
+    const { data: saved, error } = await client.rpc("portal_notes_password_set", { p_password: first });
+    if (error || saved !== true) { await centeredMessage("Not saved", error?.message || "Password could not be created."); return false; }
+    return true;
+  }
+  const password = await passwordModal("Unlock Notes", "Enter your separate Notes password.", "Unlock");
+  if (password === null) return false;
+  const { data: verified, error } = await client.rpc("portal_notes_password_verify", { p_password: password });
+  if (error) { await centeredMessage("Verification unavailable", error.message); return false; }
+  if (verified !== true) { await centeredMessage("Incorrect Password", "Notes will remain closed."); return false; }
+  return true;
+}
 async function openNotes(){
+  if (notesGateBusy) return;
+  notesGateBusy = true;
+  try {
+    showPortalView("dashboard");
+    if (!(await checkNotesGate())) return;
+  } finally { notesGateBusy = false; }
   showPortalView("notes");
   showNotesError("");
   bindTrashButton();
