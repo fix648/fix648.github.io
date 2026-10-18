@@ -2441,3 +2441,10 @@ body{font-family:var(--portal-ui-font);font-size:var(--portal-base-font-size)}
 #notesView .fixed-protected-row .notebook-name{color:#dc2626!important;font-weight:700!important}
 #notesView .fixed-protected-row .notebook-icon{color:#dc2626!important}
 .dark #notesView .fixed-protected-row .notebook-name,.dark #notesView .fixed-protected-row .notebook-icon{color:#f87171!important}
+
+/* v7.31.1: fixed notebook styles with specificity */
+#notesView .notebook-row.fixed-protected-row .notebook-item .notebook-name,
+.notebook-row.fixed-protected-row .notebook-name { color: #dc2626 !important; font-weight: 800 !important; }
+#notesView .notebook-row.fixed-protected-row .notebook-icon,
+.notebook-row.fixed-protected-row .notebook-icon { color: #dc2626 !important; }
+.notebook-row.fixed-protected-row .notebook-icon svg { width: 16px; height: 16px; stroke: #dc2626 !important; fill: none; }
