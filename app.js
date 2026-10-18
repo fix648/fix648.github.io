@@ -800,11 +800,20 @@ function ensureEditorNotebookSelector(){
   return select;
 }
 
+function isNoteInFixedNotebook(note){
+  return !!note && notesState.notebooks.some(nb => nb.is_fixed_protected && nb.id === note.notebook_id);
+}
+function showFixedTransferBlocked(){
+  return centeredMessage("Transfer disabled", "Notes inside the Fixed Notebook cannot be transferred to another notebook.");
+}
+
 function renderEditorNotebookSelector(note){
   const select = ensureEditorNotebookSelector();
   if (!select || !note) return;
 
   select.innerHTML = "";
+  select.disabled = isNoteInFixedNotebook(note);
+  select.title = select.disabled ? "Fixed Notebook notes cannot be transferred" : "Move note to another notebook";
 
   for (const nb of notesState.notebooks) {
     const option = document.createElement("option");
@@ -829,6 +838,7 @@ async function moveCurrentNoteToNotebook(event){
 
   const note = notesState.notes.find((n) => n.id === noteId);
   if (!note) return;
+  if (isNoteInFixedNotebook(note)) { renderEditorNotebookSelector(note); await showFixedTransferBlocked(); return; }
 
   const targetNotebookId = event.target.value || null;
   if (note.notebook_id === targetNotebookId) return;
@@ -1106,7 +1116,7 @@ function noteActionMenuItems(note){
   ];
   if(!inherited) items.push({id:note.is_locked?"unlock":"lock",icon:note.is_locked?"🔓":"🔒",label:note.is_locked?"Unlock":"Lock",group:1});
   items.push(
-    {id:"move",icon:"▤",label:"Move to Notebook",group:2,submenu:true},
+    ...(!isNoteInFixedNotebook(note) ? [{id:"move",icon:"▤",label:"Move to Notebook",group:2,submenu:true}] : []),
     {id:"color",icon:"◉",label:"Assign Color",group:2,submenu:true},
     {id:"duplicate",icon:"⧉",label:"Duplicate",group:2},
     {id:"autoDelete",icon:"◷",label:"Auto Delete",group:3},
@@ -1150,6 +1160,7 @@ function showNoteActionSubmenu(parentButton, note, type){
   submenu.className = `note-action-submenu ${type === "color" ? "color-submenu" : ""}`;
 
   if (type === "move") {
+    if (isNoteInFixedNotebook(note)) { showFixedTransferBlocked(); return; }
     for (const nb of [{ id: null, name: "No Notebook", color: null }, ...notesState.notebooks]) {
       const button = document.createElement("button");
       button.type = "button";
@@ -1300,6 +1311,11 @@ function centeredChoiceModal({
 }
 
 async function updateNoteActionFields(noteId, patch){
+  const source = notesState.notes.find(n => n.id === noteId);
+  if (Object.prototype.hasOwnProperty.call(patch, "notebook_id") && isNoteInFixedNotebook(source) && patch.notebook_id !== source.notebook_id) {
+    await showFixedTransferBlocked();
+    return null;
+  }
   const { data, error } = await client
     .from("notes")
     .update(patch)
@@ -1360,6 +1376,7 @@ async function toggleNoteFavorite(note){
 }
 
 async function moveNoteFromAction(note){
+  if (isNoteInFixedNotebook(note)) return showFixedTransferBlocked();
   const choices = notesState.notebooks.map((nb) => ({
     value: nb.id,
     label: nb.name,
