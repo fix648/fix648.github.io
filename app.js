@@ -583,20 +583,51 @@ async function relockFixedNotebookOnExit(nextId = null){
     return true;
   } finally {fixedRelockPending = false;}
 }
+async function fixedNotebookHasPassword(nb){
+  const {data,error} = await client.rpc("portal_fixed_notebook_has_password",{p_notebook_id:nb.id});
+  if(error){showNotesError("Fixed Notebook password check failed: " + error.message);return null;}
+  return data === true;
+}
+async function configureFixedNotebookPassword(nb){
+  const p=await passwordModal(`Set Password — ${nb.name}`,`Create a password for "${nb.name}" (at least 4 characters).` ,"Set Password");
+  if(p===null)return;
+  if(p.length<4)return centeredMessage("Password Required","Use at least 4 characters.");
+  const r=await rpcSecurity("portal_fixed_notebook_set_initial_password",{p_notebook_id:nb.id,p_password:p});
+  if(!r.ok)return;
+  fixedNotebookUnlockSession=null;
+  await loadNotebooks();await loadNotes();renderNotebooks();renderNotes();
+  await centeredMessage("Password Saved",`The password for "${nb.name}" is set. Use Unlock to open it.`);
+}
 async function lockNotebook(nb){
-  const p=await passwordModal("Lock Notebook",`Set a password for "${nb.name}". Notes inside it will also be locked.`,"Lock");
+  if(nb.is_fixed_protected){
+    const configured=await fixedNotebookHasPassword(nb);
+    if(configured===null)return;
+    if(!configured)return configureFixedNotebookPassword(nb);
+    const r=await rpcSecurity("portal_fixed_notebook_relock",{p_notebook_id:nb.id});
+    if(!r.ok)return;
+    fixedNotebookUnlockSession=null;
+    await loadNotebooks();await loadNotes();renderNotebooks();renderNotes();
+    return;
+  }
+  const p=await passwordModal(`Lock — ${nb.name}`,`Set a password for "${nb.name}". Notes inside it will also be locked.`,"Lock");
   if(p===null)return;
   if(!p||p.length<4)return centeredMessage("Password Required","Use at least 4 characters.");
-  const r=await rpcSecurity("portal_lock_notebook",{p_notebook_id:nb.id,p_password:p}); if(!r.ok)return;
-  if(nb.is_fixed_protected) fixedNotebookUnlockSession = null;
-  await loadNotebooks(); await loadNotes(); renderNotebooks(); renderNotes();
+  const r=await rpcSecurity("portal_lock_notebook",{p_notebook_id:nb.id,p_password:p});if(!r.ok)return;
+  await loadNotebooks();await loadNotes();renderNotebooks();renderNotes();
 }
 async function unlockNotebook(nb){
-  const p=await passwordModal("Unlock Notebook",`Enter the password for "${nb.name}".`,"Unlock"); if(p===null)return;
+  if(nb.is_fixed_protected){
+    const configured=await fixedNotebookHasPassword(nb);
+    if(configured===null)return;
+    if(!configured)return configureFixedNotebookPassword(nb);
+  }
+  const p=await passwordModal(`Unlock — ${nb.name}`,`Enter the saved password for "${nb.name}".`,"Unlock");
+  if(p===null)return;
   const r=await rpcSecurity(nb.is_fixed_protected ? "portal_fixed_notebook_unlock" : "portal_unlock_notebook",{p_notebook_id:nb.id,p_password:p});
-  if(!r.ok)return; if(!r.data)return centeredMessage("Incorrect Password","The notebook password is incorrect.");
-  if(nb.is_fixed_protected) fixedNotebookUnlockSession = {id:nb.id};
-  await loadNotebooks(); await loadNotes(); renderNotebooks(); renderNotes();
+  if(!r.ok)return;
+  if(!r.data)return centeredMessage("Incorrect Password","The notebook password is incorrect.");
+  if(nb.is_fixed_protected)fixedNotebookUnlockSession={id:nb.id};
+  await loadNotebooks();await loadNotes();renderNotebooks();renderNotes();
 }
 async function lockNote(note){
   const p = await passwordModal(
