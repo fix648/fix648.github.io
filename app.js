@@ -883,6 +883,7 @@ async function ensureSingleFixedNotebook(user){
     sort_order: -2147483647, is_fixed_protected: true
   }).select("id,name,icon,sort_order,color,is_favorite,is_locked,is_deleted,trashed_at,created_at,updated_at,is_fixed_protected").single();
   if(!error && data) notesState.notebooks.unshift(data);
+  if(error) showNotesError("Fixed Notebook could not be loaded or created: " + error.message);
   // Unique constraint prevents a second global fixed notebook across accounts.
 }
 
