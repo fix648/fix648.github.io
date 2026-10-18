@@ -1040,7 +1040,7 @@ function renderNotebooks(){
     row.className = "notebook-row";
     row.innerHTML = `
       <button class="notebook-item ${notesState.selectedNotebookId === nb.id ? "active" : ""}" data-id="${nb.id}">
-        <span class="notebook-icon">▤</span>
+        <span class="notebook-icon"><svg class="notebook-list-vector" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M9 3v18M12 8h5M12 12h5"/></svg></span>
         <span class="notebook-name"></span>
         <span class="notebook-count"></span>
       </button>
@@ -1061,7 +1061,7 @@ function renderNotebooks(){
 
     const notebookButton = row.querySelector(".notebook-item");
     const dotsButton = row.querySelector(".notebook-menu");
-    if(nb.is_fixed_protected){ row.querySelector(".notebook-icon").textContent = "📌"; }
+    if(nb.is_fixed_protected){ row.querySelector(".notebook-icon").innerHTML = `<svg class="notebook-list-vector" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-3 1-3 4-4 1-5 7-1-7-4-4 7-1 4-3 1-3z"/></svg>`; }
 
     notebookButton.addEventListener("click", async () => {
       if(!(await relockFixedNotebookOnExit(nb.id))) return;
@@ -2127,6 +2127,7 @@ function renderNotes(){
         btn.innerHTML = `
           <div class="note-compact-row">
             <div class="note-compact-main">
+              <span class="note-color-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M8 12h8M8 16h6"/></svg></span>
               <strong></strong>
               <div class="note-mini-icons">
                 ${note.is_pinned ? '<span title="Pinned">📌</span>' : ""}
@@ -2142,6 +2143,7 @@ function renderNotes(){
       } else {
         btn.innerHTML = `
           <div class="note-card-head">
+            <span class="note-color-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h9l4 4v14H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M14 3v5h5M8 12h8M8 16h6"/></svg></span>
             <strong></strong>
             <div class="note-mini-icons">
               ${note.is_pinned ? '<span title="Pinned">📌</span>' : ""}
@@ -2165,6 +2167,7 @@ function renderNotes(){
       if (inheritedNotebookColor) {
         btn.querySelector("strong").style.color = inheritedNotebookColor;
       }
+      btn.style.setProperty("--note-accent", note.color || inheritedNotebookColor || "#346cf3");
 
       btn.addEventListener("click", () => selectNote(note.id));
       btn.addEventListener("contextmenu", (event) => {

@@ -2417,3 +2417,17 @@ body,button,input,select,textarea{font-family:var(--portal-ui-font)}
 .dark .pane-title-row,.dark .editor-header{border-color:#303746}
 .dark .note-card.active,.dark .notebook-item.active{background:#263550}
 .dark .editor-empty-icon{background:#263550;color:#9bb9ff}
+
+/* v7.29 — unified navigation typography and colored list icons */
+:root{--portal-base-font-size:13px}
+body{font-family:var(--portal-ui-font);font-size:var(--portal-base-font-size)}
+#portalSidebar .sidebar-nav-btn,#portalSidebar .bottom .sidebar-nav-btn{font-family:var(--portal-ui-font);font-size:13px;font-weight:450;letter-spacing:0}
+#notesView .notebook-icon{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;flex-shrink:0}
+#notesView .notebook-list-vector{width:15px;height:15px;display:block}
+#notesView .note-color-icon{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;color:var(--note-accent,#346cf3);flex-shrink:0;margin-right:6px}
+#notesView .note-color-icon svg{width:14px;height:14px;display:block}
+#notesView .note-compact-main{display:flex;align-items:center;min-width:0}
+#notesView .note-compact-main strong{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+#notesView .note-card-head{display:flex;align-items:center;gap:5px}
+#notesView .note-card-head .note-mini-icons{margin-left:auto}
