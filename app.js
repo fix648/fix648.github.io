@@ -1037,6 +1037,16 @@ function renderNotebooks(){
       clearEditorSelection();
     });
 
+    // Double-click a locked notebook to open its existing password dialog.
+    // The normal single-click selection behavior remains unchanged.
+    notebookButton.addEventListener("dblclick", async (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const current = notesState.notebooks.find(item => String(item.id) === String(nb.id));
+      if (!current?.is_locked) return;
+      await unlockNotebook(current);
+    });
+
     notebookButton.addEventListener("contextmenu", async (event) => {
       if(nb.is_fixed_protected){ event.preventDefault(); event.stopPropagation(); showNotebookContextMenu(event, nb); return; }
       if(!(await relockFixedNotebookOnExit(nb.id))) return;
