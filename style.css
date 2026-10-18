@@ -2431,3 +2431,8 @@ body{font-family:var(--portal-ui-font);font-size:var(--portal-base-font-size)}
 
 #notesView .note-card-head{display:flex;align-items:center;gap:5px}
 #notesView .note-card-head .note-mini-icons{margin-left:auto}
+
+/* v7.30: entire dashboard tool card is a click/keyboard target */
+.home-tools-grid .home-tool-card[data-tool]{cursor:pointer}
+.home-tools-grid .home-tool-card[data-tool]:focus-visible{outline:3px solid #2d65ed;outline-offset:3px}
+.home-tools-grid .home-tool-card[data-tool]:active{transform:translateY(0)}

@@ -2738,7 +2738,27 @@ async function openNotes(){
 $("navDashboard")?.addEventListener("click", () => showPortalView("dashboard"));
 $("backDashboard")?.addEventListener("click", () => showPortalView("dashboard"));
 $("navNotes")?.addEventListener("click", openNotes);
-$("openNotesCard")?.addEventListener("click", (e) => { e.preventDefault(); openNotes(); });
+
+// The full tool card is actionable; nested Open links use the same handler.
+document.querySelectorAll(".home-tool-card[data-tool]").forEach((card) => {
+  const activate = () => {
+    const tool = card.dataset.tool;
+    if (tool === "notes") { openNotes(); return; }
+    // These modules have not been implemented yet; avoid navigating to an empty page.
+    const title = card.querySelector("h4")?.textContent?.trim() || "This tool";
+    window.alert(`${title} is not available yet.`);
+  };
+  card.addEventListener("click", (event) => {
+    if (event.target.closest("a")) event.preventDefault();
+    activate();
+  });
+  card.addEventListener("keydown", (event) => {
+    if (event.target !== card || !["Enter", " "].includes(event.key)) return;
+    event.preventDefault();
+    activate();
+  });
+});
+
 document.querySelector('[data-notebook="all"]')?.addEventListener("click", async () => {
   if(!(await relockFixedNotebookOnExit("all"))) return;
   notesState.selectedNotebookId = "all";
