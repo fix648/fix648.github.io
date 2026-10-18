@@ -179,7 +179,19 @@ const notesState = {
 const emptyDoc = { type: "doc", content: [{ type: "paragraph" }] };
 
 async function showPortalView(view){
-  if(view !== "notes" && !(await relockFixedNotebookOnExit())) return;
+  if(view !== "notes") {
+    if(!(await relockFixedNotebookOnExit())) return;
+    // Never leave the fixed notebook or its open editor selected in a hidden view.
+    const fixed = notesState.notebooks.find(n => n.is_fixed_protected);
+    if(fixed && String(notesState.selectedNotebookId) === String(fixed.id)) {
+      notesState.selectedNotebookId = "all";
+      notesState.selectedNoteId = null;
+      notesState.notes = [];
+      clearEditorSelection();
+      renderNotes();
+      renderNotebooks();
+    }
+  }
   $("dashboardView").classList.toggle("hidden", view !== "dashboard");
   $("notesView").classList.toggle("hidden", view !== "notes");
   $("settingsView").classList.toggle("hidden", view !== "settings");
@@ -579,6 +591,14 @@ async function relockFixedNotebookOnExit(nextId = null){
     const {data,error} = await client.rpc("portal_fixed_notebook_relock", {p_notebook_id:session.id});
     if(error) {showNotesError("Automatic relock failed: " + error.message); return false;}
     fixedNotebookUnlockSession = null;
+    const fixed = notesState.notebooks.find(n => n.is_fixed_protected && String(n.id) === String(session.id));
+    if(fixed) fixed.is_locked = true;
+    // Purge any fixed-note content already held by the UI before navigating.
+    if(String(notesState.selectedNotebookId) === String(session.id)) {
+      notesState.selectedNoteId = null;
+      clearEditorSelection();
+      notesState.notes = [];
+    }
     await loadNotebooks();
     return true;
   } finally {fixedRelockPending = false;}
@@ -945,7 +965,8 @@ async function loadNoteCounts(){
   }
 
   notesState.notebookCounts = counts;
-  notesState.totalNotesCount = (data || []).length;
+  const fixedIds = new Set(notesState.notebooks.filter(n => n.is_fixed_protected).map(n => String(n.id)));
+  notesState.totalNotesCount = (data || []).filter(n => !fixedIds.has(String(n.notebook_id))).length;
 }
 
 async function loadNotes(){
@@ -959,10 +980,17 @@ async function loadNotes(){
     .order("updated_at", { ascending: false });
 
   if (notesState.selectedNotebookId !== "all") query = query.eq("notebook_id", notesState.selectedNotebookId);
+  else {
+    const fixedIds = notesState.notebooks.filter(n => n.is_fixed_protected).map(n => n.id);
+    if(fixedIds.length) query = query.not("notebook_id", "in", `(${fixedIds.join(",")})`);
+  }
 
   const { data, error } = await query;
   if (error) throw error;
-  notesState.notes = data || [];
+  const fixedIds = new Set(notesState.notebooks.filter(n => n.is_fixed_protected).map(n => String(n.id)));
+  notesState.notes = notesState.selectedNotebookId === "all"
+    ? (data || []).filter(n => !fixedIds.has(String(n.notebook_id)))
+    : (data || []);
   renderNotes();
 }
 
@@ -2607,7 +2635,7 @@ async function relockFixedNotebookOnStartup(){
     .select("id,is_locked").eq("user_id",user.id).eq("is_fixed_protected",true).limit(1);
   if(error) throw error;
   const fixed = data?.[0];
-  if(!fixed || fixed.is_locked) return;
+  if(!fixed || fixed.is_locked) { fixedNotebookUnlockSession = null; return; }
   const {error:relockError} = await client.rpc("portal_fixed_notebook_relock",{p_notebook_id:fixed.id});
   if(relockError) throw new Error("Fixed Notebook startup relock failed: " + relockError.message);
   fixedNotebookUnlockSession = null;
@@ -2627,11 +2655,15 @@ async function openNotes(){
     await relockFixedNotebookOnStartup();
     await processDueAutoDeletesClient();
     // Render database-backed panes as soon as possible.
-    await Promise.all([
-      loadNotebooks(),
-      loadNoteCounts(),
-      loadNotes(),
-    ]);
+    // Counts and All Notes exclusions require the notebook identities first.
+    await loadNotebooks();
+    const fixed = notesState.notebooks.find(n => n.is_fixed_protected);
+    if(fixed && String(notesState.selectedNotebookId) === String(fixed.id) && fixed.is_locked) {
+      notesState.selectedNotebookId = "all";
+      notesState.selectedNoteId = null;
+      clearEditorSelection();
+    }
+    await Promise.all([loadNoteCounts(), loadNotes()]);
 
     renderNotebooks();
     renderNotes();
