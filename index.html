@@ -129,7 +129,7 @@
       </section>
       <section id="dashboardView" class="home-dashboard">
         <header class="home-header"><div><div class="home-eyebrow">YOUR WORKSPACE</div><h1>Welcome back</h1><p>Everything important, in one place.</p></div><div class="avatar">SM</div></header>
-        <section class="hero home-hero"><div><div class="home-eyebrow">PERSONAL PORTAL</div><h2>Make room for what matters.</h2><p>Choose a tool to continue your work.</p></div><div class="badge">Personal Portal v7.27</div></section>
+        <section class="hero home-hero"><div><div class="home-eyebrow">PERSONAL PORTAL</div><h2>Make room for what matters.</h2><p>Choose a tool to continue your work.</p></div><div class="badge">Personal Portal v7.28</div></section>
         <div class="home-section-heading"><div><h3>Your tools</h3><p>Four essentials, one clean workspace.</p></div></div>
         <section class="grid home-tools-grid">          <article class="home-tool-card"><div class="home-tool-icon home-tool-notes"><svg class="portal-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div><h4>Notes</h4><p>Write, organize and protect your ideas.</p><a id="openNotesCard" href="#" aria-label="Open Notes">Open <span aria-hidden="true">→</span></a></article>
           <article class="home-tool-card"><div class="home-tool-icon home-tool-trading"><svg class="portal-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg></div><h4>Trading Journal</h4><p>Review trades and track your performance.</p><a href="#" aria-label="Open Trading Journal">Open <span aria-hidden="true">→</span></a></article>
@@ -153,16 +153,16 @@
           <section class="notebook-pane">
             <div class="pane-title-row">
               <div><p class="pane-kicker">1. NOTEBOOKS</p><h2>Notebooks</h2></div>
-              <button id="newNotebookBtn" class="icon-btn" title="New notebook">＋</button>
+              <button id="newNotebookBtn" class="icon-btn" title="New notebook"><svg class="ui-modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
             </div>
             <button class="notebook-item active" data-notebook="all">
-              <span class="notebook-icon">▣</span>
+              <span class="notebook-icon"><svg class="ui-modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 3v18M11 8h6M11 12h6"/></svg></span>
               <span class="notebook-name">All Notes</span>
               <span id="allNotesCount" class="notebook-count">0</span>
             </button>
             <div id="notebookList" class="notebook-list"></div>
             <div class="notebook-footer">
-              <button id="newNotebookBottom" class="outline-btn">＋ New Notebook</button>
+              <button id="newNotebookBottom" class="outline-btn"><svg class="ui-modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg> New Notebook</button>
               <button id="trashViewBtn" class="trash-view-btn" type="button"><svg class="trash-nav-icon" viewBox="0 0 24 24" aria-hidden="true">
 <path d="M4 7h16"></path><path d="M9 7V4h6v3"></path>
 <path d="M6.5 7l.8 13h9.4l.8-13"></path><path d="M10 11v5"></path><path d="M14 11v5"></path></svg><span>Trash</span>
@@ -174,7 +174,7 @@
           <section class="note-list-pane">
             <div class="pane-title-row compact">
               <div><p class="pane-kicker green">2. NOTES</p><h2>Notes</h2></div>
-              <button id="newNoteBtn" class="primary-small">＋ New Note</button>
+              <button id="newNoteBtn" class="primary-small"><svg class="ui-modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>New Note</span></button>
             </div>
             <div class="search-wrap">
               <input id="noteSearch" type="search" placeholder="Search notes..." />
@@ -182,19 +182,13 @@
 
             <div class="notes-list-tools">
               <div class="notes-tool-left">
-                <button id="notesSortMenuBtn" class="notes-icon-btn" type="button" title="Group & sort" aria-label="Group and sort">
-                  <span aria-hidden="true">⇅</span>
-                </button>
+                <button id="notesSortMenuBtn" class="notes-icon-btn" type="button" title="Group & sort" aria-label="Group and sort"><svg class="ui-modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h12M3 12h9M3 17h6M17 4v16m-4-4 4 4 4-4"/></svg></button>
                 <span id="notesSortSummary" class="notes-sort-summary">Edited · Newest</span>
               </div>
 
               <div class="notes-view-toggle" role="group" aria-label="Notes view">
-                <button id="compactViewBtn" class="notes-icon-btn active" type="button" title="Compact view" aria-label="Compact view">
-                  <span aria-hidden="true">☰</span>
-                </button>
-                <button id="detailViewBtn" class="notes-icon-btn" type="button" title="Detail view" aria-label="Detail view">
-                  <span aria-hidden="true">▤</span>
-                </button>
+                <button id="compactViewBtn" class="notes-icon-btn active" type="button" title="Compact view" aria-label="Compact view"><svg class="ui-modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg></button>
+                <button id="detailViewBtn" class="notes-icon-btn" type="button" title="Detail view" aria-label="Detail view"><svg class="ui-modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 9h9M8 13h9M8 17h6"/></svg></button>
               </div>
             </div>
 
@@ -245,7 +239,7 @@
           <section class="editor-pane">
             <div id="editorEmpty" class="editor-empty">
               <div>
-                <div class="editor-empty-icon">✎</div>
+                <div class="editor-empty-icon"><svg class="ui-modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L9 17l-4 1 1-4Z"/></svg></div>
                 <h2>Select a note</h2>
                 <p>Choose a note from the middle column or create a new one.</p>
               </div>
@@ -256,7 +250,7 @@
                 <input id="noteTitle" class="note-title-input" value="Untitled Note" />
                 <div class="editor-actions">
                   <span id="saveStatus" class="save-status">Saved</span>
-                  <button id="deleteNoteBtn" class="icon-btn danger" title="Move to trash">⌫</button>
+                  <button id="deleteNoteBtn" class="icon-btn danger" title="Move to trash"><svg class="ui-modern-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg></button>
                 </div>
               </div>
 

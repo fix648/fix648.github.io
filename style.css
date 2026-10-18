@@ -2384,3 +2384,36 @@ body,button,input,select,textarea{font-family:var(--portal-ui-font)}
 .dark .home-tools-grid .home-tool-card{border-color:#303846}
 .dark .home-section-heading p{color:#a1a8b6}
 @media(max-width:760px){.home-tools-grid{grid-template-columns:1fr}.home-dashboard .home-hero{padding:24px}.home-dashboard .home-hero h2{font-size:22px}}
+
+/* v7.28 — Notes workspace visual refresh, no behavioral changes */
+.notes-workspace{--ui-accent:#3569e8;--ui-stroke:#e6eaf1;--ui-quiet:#f7f9fd}
+.notes-shell{border:1px solid var(--ui-stroke);border-radius:13px;box-shadow:0 7px 32px rgba(27,44,77,.055)}
+.notebook-pane{background:#fbfcff}.note-list-pane{background:#fff}.editor-pane{background:#fff}
+.pane-title-row{padding-bottom:10px;border-bottom:1px solid #f0f2f7;margin-bottom:12px}
+.pane-title-row h2{font-weight:750;letter-spacing:-.035em}.pane-kicker{letter-spacing:.12em}
+.ui-modern-icon{width:17px;height:17px;display:inline-block;vertical-align:middle;flex-shrink:0}
+.icon-btn,.notes-icon-btn{display:inline-flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s,color .15s}
+.icon-btn:hover,.notes-icon-btn:hover{background:#edf3ff;border-color:#b7cafa;color:#2459d5}
+#newNoteBtn{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+#newNoteBtn .ui-modern-icon{width:15px;height:15px}
+.notebook-item{border-radius:8px;transition:background .15s,box-shadow .15s;min-width:0}
+.notebook-item.active{background:#eaf1ff;box-shadow:inset 3px 0 0 #3569e8}
+.notebook-name{min-width:0}.notebook-count{white-space:nowrap;font-variant-numeric:tabular-nums}
+.notebook-icon{display:flex;align-items:center;justify-content:center}.notebook-icon .ui-modern-icon{width:16px;height:16px}
+.notebook-menu{display:grid;place-items:center}.notebook-menu:hover{background:#edf2ff}
+.search-wrap input{background:#fbfcff;border-color:#e2e7f0;border-radius:9px}
+.notes-list-tools{margin-top:2px}.notes-sort-summary{color:#8792a3}
+.note-list{scrollbar-width:thin;scrollbar-color:#d8e0ed transparent}
+.note-card{border-radius:9px;transition:background .14s,border-color .14s}
+.note-card.active{background:#edf3ff;border-color:#93b2fa;box-shadow:inset 2px 0 0 #3569e8}
+.editor-header{border-bottom:1px solid #f1f3f7}.note-title-input{letter-spacing:-.035em}
+.editor-toolbar{background:#fcfdff;gap:5px;border-top:0;border-bottom:1px solid #e7ebf2}
+.editor-toolbar button{transition:background .12s,color .12s}.editor-toolbar button:hover{background:#eaf1ff}
+.editor-empty-icon{width:56px;height:56px;margin:0 auto 15px;border-radius:17px;background:#edf3ff;display:grid;place-items:center;color:#3569e8}
+.editor-empty-icon .ui-modern-icon{width:27px;height:27px}
+.editor-footer{background:#fcfdff}
+.pane-resizer{transition:background .14s}.pane-resizer:hover{background:#dce8ff}
+.dark .notebook-pane,.dark .editor-toolbar,.dark .editor-footer{background:#1c2029}
+.dark .pane-title-row,.dark .editor-header{border-color:#303746}
+.dark .note-card.active,.dark .notebook-item.active{background:#263550}
+.dark .editor-empty-icon{background:#263550;color:#9bb9ff}
