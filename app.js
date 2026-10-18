@@ -982,7 +982,7 @@ async function loadNotes(){
   if (notesState.selectedNotebookId !== "all") query = query.eq("notebook_id", notesState.selectedNotebookId);
   else {
     const fixedIds = notesState.notebooks.filter(n => n.is_fixed_protected).map(n => n.id);
-    if(fixedIds.length) query = query.not("notebook_id", "in", `(${fixedIds.join(",")})`);
+    if(fixedIds.length) query = query.or(`notebook_id.is.null,notebook_id.not.in.(${fixedIds.join(",")})`);
   }
 
   const { data, error } = await query;
