@@ -63,7 +63,7 @@ $("loginForm")?.addEventListener("submit", async (e) => {
     if (data?.success && data?.session) {
       const { error } = await client.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token });
       if (error) throw error;
-      showOnly("app"); await showPortalView("dashboard"); $("loginPassword").value = ""; return;
+      resetPortalNavigationAfterAuth(); showOnly("app"); $("loginPassword").value = ""; return;
     }
     if (data?.verificationRequired) { sessionStorage.setItem("portalLoginId", loginId); setMessage($("otpMessage"), data.message || "Verification required.", "ok"); showOnly("otp"); return; }
     setMessage($("loginMessage"), data?.message || "Sign in failed.");
@@ -74,7 +74,7 @@ $("loginForm")?.addEventListener("submit", async (e) => {
 $("otpForm")?.addEventListener("submit", async (e) => {
   e.preventDefault(); const loginId = sessionStorage.getItem("portalLoginId") || $("loginId").value.trim(); const otp = $("otpCode").value.trim();
   $("verifyBtn").disabled = true; $("verifyBtn").textContent = "Verifying...";
-  try { const { data } = await callPortalAuth({ action: "verify", loginId, otp }); if (data?.success && data?.session) { await client.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token }); sessionStorage.removeItem("portalLoginId"); showOnly("app"); await showPortalView("dashboard"); return; } setMessage($("otpMessage"), data?.message || "Verification failed."); }
+  try { const { data } = await callPortalAuth({ action: "verify", loginId, otp }); if (data?.success && data?.session) { await client.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token }); sessionStorage.removeItem("portalLoginId"); resetPortalNavigationAfterAuth(); showOnly("app"); return; } setMessage($("otpMessage"), data?.message || "Verification failed."); }
   catch { setMessage($("otpMessage"), "Unable to verify the code."); }
   finally { $("verifyBtn").disabled = false; $("verifyBtn").textContent = "Verify"; }
 });
@@ -82,16 +82,23 @@ $("otpForm")?.addEventListener("submit", async (e) => {
 $("resendBtn")?.addEventListener("click", async () => { const loginId = sessionStorage.getItem("portalLoginId") || $("loginId").value.trim(); const { data } = await callPortalAuth({ action: "resend", loginId }); setMessage($("otpMessage"), data?.message || "Unable to resend code.", data?.success ? "ok" : "error"); });
 
 $("logoutBtn")?.addEventListener("click", async () => {
-  // Relock before destroying the authenticated session; clear sensitive UI regardless.
-  try { await relockFixedNotebookOnExit("logout"); }
-  catch (err) { console.error("LOGOUT_RELOCK_ERROR", err); }
-  fixedNotebookUnlockSession = null;
-  notesState.selectedNotebookId = "all";
-  notesState.selectedNoteId = null;
-  notesState.notes = [];
-  try { clearEditorSelection(); } catch (err) { console.warn(err); }
+  // Relock while the authenticated session still has RPC privileges.
+  try {
+    const user = await getCurrentUser();
+    const {data: fixed, error: lookupError} = await client.from("notebooks")
+      .select("id,is_locked").eq("user_id", user.id).eq("is_fixed_protected", true).limit(1);
+    if (lookupError) throw lookupError;
+    if (fixed?.[0] && !fixed[0].is_locked) {
+      const {error} = await client.rpc("portal_fixed_notebook_relock", {p_notebook_id:fixed[0].id});
+      if (error) throw error;
+    }
+  } catch (error) {
+    console.error("LOGOUT_RELOCK_ERROR", error);
+    // Don't retain an authenticated session just because relock failed.
+  }
   await client.auth.signOut();
   sessionStorage.removeItem("portalLoginId");
+  resetPortalNavigationAfterAuth();
   showOnly("login");
 });
 $("settingsBtn")?.addEventListener("click", () => {
@@ -189,6 +196,22 @@ const notesState = {
 };
 
 const emptyDoc = { type: "doc", content: [{ type: "paragraph" }] };
+
+function resetPortalNavigationAfterAuth(){
+  fixedNotebookUnlockSession = null;
+  notesState.selectedNotebookId = "all";
+  notesState.selectedNoteId = null;
+  notesState.notes = [];
+  notesState.notebooks = [];
+  try { clearEditorSelection(); } catch (_) {}
+  for(const [id, active] of [["dashboardView",true],["notesView",false],["settingsView",false]]) {
+    const el = $(id); if(el) el.classList.toggle("hidden", !active);
+  }
+  for(const [id, active] of [["navDashboard",true],["navNotes",false],["settingsBtn",false]]) {
+    const el = $(id); if(el) el.classList.toggle("active", active);
+  }
+  showNotesError("");
+}
 
 async function showPortalView(view){
   if(view !== "notes") {

@@ -2353,3 +2353,34 @@ body,button,input,select,textarea,.portal-modal,.note-context-menu,.notebook-con
 body,button,input,select,textarea{font-family:var(--portal-ui-font)}
 .portal-settings .portal-font-select{display:block;width:100%;max-width:440px;padding:10px 12px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#263244;font-size:13px}
 .portal-settings .settings-tabs button:disabled{opacity:1;cursor:default}
+
+/* v7.27 — refined dashboard, consistent vector icons */
+#portalSidebar .portal-lucide{width:19px;height:19px;display:block;flex-shrink:0}
+#portalSidebar .sidebar-icon{font-size:initial}
+.home-dashboard{max-width:1240px;margin:0 auto}
+.home-dashboard .home-header{margin:0 0 25px}
+.home-eyebrow{font-size:11px;font-weight:750;letter-spacing:.13em;color:#5579b8;margin-bottom:9px}
+.home-dashboard .home-header h1{font-size:29px;letter-spacing:-.04em}
+.home-dashboard .home-header p{font-size:14px}
+.home-dashboard .home-hero{background:linear-gradient(115deg,#fff 0%,#f5f8ff 100%);border:1px solid #e0e8f8;box-shadow:0 8px 28px rgba(36,77,143,.045);padding:33px 34px;border-radius:18px}
+.home-dashboard .home-hero h2{font-size:26px;letter-spacing:-.04em}
+.home-dashboard .home-hero p{font-size:14px}
+.home-dashboard .home-hero .badge{white-space:nowrap;font-weight:650}
+.home-section-heading{margin:30px 0 15px}
+.home-section-heading h3{font-size:17px;margin:0 0 5px;letter-spacing:-.02em}
+.home-section-heading p{font-size:13px;color:#818b9c;margin:0}
+.home-tools-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.home-tools-grid .home-tool-card{min-height:202px;padding:25px 26px;border-radius:17px;border:1px solid #e4e9f2;box-shadow:0 4px 18px rgba(20,45,85,.035);transition:transform .16s,box-shadow .16s,border-color .16s}
+.home-tools-grid .home-tool-card:hover{transform:translateY(-2px);border-color:#bdcffa;box-shadow:0 12px 28px rgba(28,68,128,.09)}
+.home-tool-icon{display:grid;place-items:center;width:44px;height:44px;border-radius:13px;background:#eaf0ff;color:#315fdf}
+.home-tool-icon .portal-lucide{width:23px;height:23px}
+.home-tool-trading{background:#e8f6f2;color:#0f9277}
+.home-tool-workout{background:#fff1e7;color:#d17836}
+.home-tool-files{background:#f0ecff;color:#7653c5}
+.home-tools-grid .home-tool-card h4{font-size:17px;letter-spacing:-.025em;margin:18px 0 7px}
+.home-tools-grid .home-tool-card p{font-size:13px;margin:0 0 20px}
+.home-tools-grid .home-tool-card a{font-weight:650;font-size:13px}
+.dark .home-dashboard .home-hero{background:linear-gradient(115deg,#1a1d22,#20283b);border-color:#303d54}
+.dark .home-tools-grid .home-tool-card{border-color:#303846}
+.dark .home-section-heading p{color:#a1a8b6}
+@media(max-width:760px){.home-tools-grid{grid-template-columns:1fr}.home-dashboard .home-hero{padding:24px}.home-dashboard .home-hero h2{font-size:22px}}
