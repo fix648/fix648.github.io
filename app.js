@@ -1038,6 +1038,7 @@ function renderNotebooks(){
       : "";
     const row = document.createElement("div");
     row.className = "notebook-row";
+    if (nb.is_fixed_protected) row.classList.add("fixed-protected-row");
     row.innerHTML = `
       <button class="notebook-item ${notesState.selectedNotebookId === nb.id ? "active" : ""}" data-id="${nb.id}">
         <span class="notebook-icon"><svg class="notebook-list-vector" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="15" height="18" rx="2"/><path d="M9 3v18M12 8h5M12 12h5"/></svg></span>
@@ -1054,14 +1055,14 @@ function renderNotebooks(){
     }
     if (nb.color) {
       row.querySelector(".notebook-icon").style.color = nb.color;
-      row.querySelector(".notebook-name").style.color = nb.color;
+      if (!nb.is_fixed_protected) row.querySelector(".notebook-name").style.color = nb.color;
     }
     const nbCount = notesState.notebookCounts[nb.id] || 0;
     row.querySelector(".notebook-count").textContent = nbCount;
 
     const notebookButton = row.querySelector(".notebook-item");
     const dotsButton = row.querySelector(".notebook-menu");
-    if(nb.is_fixed_protected){ row.querySelector(".notebook-icon").innerHTML = `<svg class="notebook-list-vector" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 3 5 5-3 1-3 4-4 1-5 7-1-7-4-4 7-1 4-3 1-3z"/></svg>`; }
+    if(nb.is_fixed_protected){ row.querySelector(".notebook-icon").innerHTML = `<svg class="notebook-list-vector" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15.5 3.5 20.5 8.5 17 9.3 14.1 12.2 13.7 15.1 11.6 17.2 8.8 14.4 4 20 9.6 15.2 6.8 12.4 8.9 10.3 11.8 9.9 14.7 7z"/></svg>`; row.querySelector(".notebook-icon").style.color = "#dc2626"; }
 
     notebookButton.addEventListener("click", async () => {
       if(!(await relockFixedNotebookOnExit(nb.id))) return;

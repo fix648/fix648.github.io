@@ -2436,3 +2436,8 @@ body{font-family:var(--portal-ui-font);font-size:var(--portal-base-font-size)}
 .home-tools-grid .home-tool-card[data-tool]{cursor:pointer}
 .home-tools-grid .home-tool-card[data-tool]:focus-visible{outline:3px solid #2d65ed;outline-offset:3px}
 .home-tools-grid .home-tool-card[data-tool]:active{transform:translateY(0)}
+
+/* v7.31 — fixed notebook pin and name */
+#notesView .fixed-protected-row .notebook-name{color:#dc2626!important;font-weight:700!important}
+#notesView .fixed-protected-row .notebook-icon{color:#dc2626!important}
+.dark #notesView .fixed-protected-row .notebook-name,.dark #notesView .fixed-protected-row .notebook-icon{color:#f87171!important}
