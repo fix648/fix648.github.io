@@ -2354,6 +2354,18 @@ async function initTiptap(){
       },
     });
 
+    // v7.32: A click anywhere in the blank writing canvas focuses Tiptap.
+    // Do not override native caret positioning when clicking existing text.
+    const writingCanvas = $("editorHost");
+    if (writingCanvas && !writingCanvas.dataset.canvasFocusBound) {
+      writingCanvas.dataset.canvasFocusBound = "true";
+      writingCanvas.addEventListener("pointerdown", (event) => {
+        if (event.button !== 0 || !notesState.editor || !notesState.editor.isEditable) return;
+        if (event.target.closest(".tiptap-editor")) return;
+        event.preventDefault();
+        notesState.editor.chain().focus("end").run();
+      });
+    }
     notesState.editorReady = true;
     bindToolbar();
     bindAdvancedToolbarControls();

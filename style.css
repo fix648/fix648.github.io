@@ -2452,3 +2452,6 @@ body{font-family:var(--portal-ui-font);font-size:var(--portal-base-font-size)}
 /* v7.31.2 fixed protected notebook red label and pin */
 .notebook-row[data-fixed-protected="true"] .notebook-name{color:#dc2626!important;font-weight:800!important}
 .notebook-row[data-fixed-protected="true"] .notebook-icon,.notebook-row[data-fixed-protected="true"] .notebook-icon svg{color:#dc2626!important;stroke:#dc2626!important}
+
+/* v7.32: Entire blank writing canvas accepts focus. */
+#editorHost, #editor { cursor:text; }
