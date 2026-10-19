@@ -129,12 +129,19 @@
       </section>
       <section id="dashboardView" class="home-dashboard">
         <header class="home-header"><div><div class="home-eyebrow">YOUR WORKSPACE</div><h1>Welcome back</h1><p>Everything important, in one place.</p></div><div class="avatar">SM</div></header>
-        <section class="hero home-hero"><div><div class="home-eyebrow">PERSONAL PORTAL</div><h2>Make room for what matters.</h2><p>Choose a tool to continue your work.</p></div><div class="badge">Personal Portal v7.32</div></section>
+        <section class="hero home-hero"><div><div class="home-eyebrow">PERSONAL PORTAL</div><h2>Make room for what matters.</h2><p>Choose a tool to continue your work.</p></div><div class="badge">Personal Portal v7.32 + Drive Adapter N326</div></section>
         <div class="home-section-heading"><div><h3>Your tools</h3><p>Four essentials, one clean workspace.</p></div></div>
         <section class="grid home-tools-grid">          <article class="home-tool-card" data-tool="notes" role="button" tabindex="0" aria-label="Open Notes"><div class="home-tool-icon home-tool-notes"><svg class="portal-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></div><h4>Notes</h4><p>Write, organize and protect your ideas.</p><a id="openNotesCard" href="#" aria-label="Open Notes">Open <span aria-hidden="true">→</span></a></article>
           <article class="home-tool-card" data-tool="trading" role="button" tabindex="0" aria-label="Open Trading Journal"><div class="home-tool-icon home-tool-trading"><svg class="portal-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l6-6 4 4 8-9"/><path d="M15 6h6v6"/></svg></div><h4>Trading Journal</h4><p>Review trades and track your performance.</p><a href="#" aria-label="Open Trading Journal">Open <span aria-hidden="true">→</span></a></article>
           <article class="home-tool-card" data-tool="workout" role="button" tabindex="0" aria-label="Open Workout Tracker"><div class="home-tool-icon home-tool-workout"><svg class="portal-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 6.5l11 11M4 8l4-4M2 6l4-4M16 20l4-4M18 22l4-4"/></svg></div><h4>Workout Tracker</h4><p>Plan sessions and monitor progress.</p><a href="#" aria-label="Open Workout Tracker">Open <span aria-hidden="true">→</span></a></article>
           <article class="home-tool-card" data-tool="files" role="button" tabindex="0" aria-label="Open File Manager"><div class="home-tool-icon home-tool-files"><svg class="portal-lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></div><h4>File Manager</h4><p>Keep your documents in one place.</p><a href="#" aria-label="Open File Manager">Open <span aria-hidden="true">→</span></a></article>
+        </section>
+        <section id="driveAdapterPanel" aria-label="Google Drive integration" style="margin:18px 0;padding:16px;border:1px solid #cbd5e1;border-radius:12px;max-width:640px">
+          <h3 style="margin:0 0 6px">Google Drive — Integration Check</h3>
+          <p style="margin:0 0 10px">Test mode only. Existing Notes remain in Supabase.</p>
+          <button id="drivePingBtn" type="button" style="padding:9px 14px;margin-right:8px;cursor:pointer">Check Connection</button>
+          <button id="driveThreeTestsBtn" type="button" style="padding:9px 14px;cursor:pointer">Run 3 Test Actions</button>
+          <p id="driveAdapterStatus" role="status" aria-live="polite" style="white-space:pre-wrap;overflow-wrap:anywhere;margin:12px 0 0">Not tested</p>
         </section>
       </section>
 
@@ -322,6 +329,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="app.js?v=7.31.2"></script>
+  <script src="app.js?v=7.32-n326"></script>
+  <script src="drive-storage-adapter.js?v=n326"></script>
 </body>
 </html>
