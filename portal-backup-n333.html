@@ -11,7 +11,7 @@ async function readTable(table,userId){
  for(let from=0;from<100000;from+=size){
   status.textContent='Reading '+table+' ('+rows.length+' rows)…';
   // All tables are filtered by authenticated user ID; RLS remains enforced.
-  const {data,error}=await db.from(table).select('*').eq('user_id',userId).order('id',{ascending:true}).range(from,from+size-1);
+  const {data,error}=await db.from(table).select('*').eq('user_id',userId).range(from,from+size-1);
   if(error)throw new Error(table+': '+error.message);
   rows.push(...data);
   if(data.length<size)return rows;
