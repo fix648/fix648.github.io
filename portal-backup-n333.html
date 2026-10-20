@@ -1,0 +1,53 @@
+<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>N333 — Encrypted Notes Backup</title><style>body{font:15px/1.6 system-ui,sans-serif;max-width:790px;margin:25px auto;padding:0 16px;color:#172333}h1{font-size:23px}button{background:#235acc;color:white;padding:11px 17px;border:0;border-radius:7px;cursor:pointer}button:disabled{opacity:.5}input{width:min(100%,440px);box-sizing:border-box;padding:10px;border:1px solid #aab4c3;border-radius:6px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f3f8;padding:15px;border-radius:7px}label{display:block;margin:12px 0 5px}.warn{color:#9a3e13}</style></head><body><h1>N333 — Encrypted Notes Backup</h1><p>প্রথমে <a href="/">Personal Portal</a>-এ Login করুন। এই পেজ শুধু Database থেকে তথ্য <b>পড়বে</b>; কোনো তথ্য পরিবর্তন করবে না।</p><p>Backup-এ Notes (Trash/Archived সহ), Notebooks এবং Lock Tables অন্তর্ভুক্ত করার চেষ্টা হবে। এটি পূর্ণ PostgreSQL Database Backup নয়।</p><label for="password">Backup Encryption Password (কমপক্ষে 12 অক্ষর)</label><input id="password" type="password" autocomplete="new-password" placeholder="নিজের নতুন শক্তিশালী Backup Password"><label for="confirm">Confirm Password</label><input id="confirm" type="password" autocomplete="new-password"><p class="warn">এই Password হারালে Backup খুলতে পারবেন না। এখানে বা Screenshot-এ Password দেখাবেন না।</p><button id="run">Create Encrypted Backup</button><p id="status" role="status">Ready</p><pre id="result">এখনও Backup তৈরি হয়নি।</pre><p>ফাইল ডাউনলোড হলে Google Drive → Personal_Portal → Backup-এ নিজে Upload করুন। Upload হওয়ার আগে Supabase-এর কোনো ডাটা মুছবেন না।</p><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+'use strict';
+const url='https://oiaudmzrwtaljkcwbooi.supabase.co';
+const key='sb_publishable_IHsq14XmgVhe9J8taquEkg_n_TCiDVn';
+const db=window.supabase.createClient(url,key,{auth:{detectSessionInUrl:false,persistSession:true,autoRefreshToken:true}});
+const run=document.getElementById('run'),status=document.getElementById('status'),result=document.getElementById('result');
+function message(x){result.textContent=JSON.stringify(x,null,2);}
+const enc=new TextEncoder();
+async function readTable(table,userId){
+ const rows=[];const size=500;
+ for(let from=0;from<100000;from+=size){
+  status.textContent='Reading '+table+' ('+rows.length+' rows)…';
+  // All tables are filtered by authenticated user ID; RLS remains enforced.
+  const {data,error}=await db.from(table).select('*').eq('user_id',userId).order('id',{ascending:true}).range(from,from+size-1);
+  if(error)throw new Error(table+': '+error.message);
+  rows.push(...data);
+  if(data.length<size)return rows;
+ }
+ throw new Error(table+': Row limit reached. Backup stopped, not marked complete.');
+}
+async function encrypted(data,password){
+ const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+ const raw=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveKey']);
+ const aes=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:310000,hash:'SHA-256'},raw,{name:'AES-GCM',length:256},false,['encrypt']);
+ const ciphertext=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},aes,enc.encode(JSON.stringify(data))));
+ const b64=x=>{let s='';for(let i=0;i<x.length;i+=8192)s+=String.fromCharCode(...x.subarray(i,i+8192));return btoa(s)};
+ return {format:'N333_AES_256_GCM_PBKDF2',version:1,kdf:{iterations:310000,salt:b64(salt),hash:'SHA-256'},cipher:{iv:b64(iv),data:b64(ciphertext)}};
+}
+run.onclick=async()=>{
+ run.disabled=true;message({result:'RUNNING'});
+ try{
+  if(!crypto?.subtle)throw Error('Secure HTTPS browser required');
+  const pass=document.getElementById('password').value,confirm=document.getElementById('confirm').value;
+  if(pass.length<12||pass!==confirm)throw Error('Password must be 12+ characters and match confirmation');
+  const {data:{user},error}=await db.auth.getUser();
+  if(error||!user)throw Error('Portal Login session not found');
+  const tables=['notebooks','notes','note_locks','notebook_locks'];
+  const backup={format:'N333_PORTAL_DATA_BACKUP',createdAt:new Date().toISOString(),userId:user.id,tables:{}};
+  const counts={};
+  for(const table of tables){const rows=await readTable(table,user.id);backup.tables[table]=rows;counts[table]=rows.length;}
+  status.textContent='Encrypting…';
+  const wrapped=await encrypted(backup,pass);
+  const blob=new Blob([JSON.stringify(wrapped)],{type:'application/json'});
+  const stamp=new Date().toISOString().replace(/[:.]/g,'-');
+  const name='Personal_Portal_N333_Encrypted_Backup_'+stamp+'.json';
+  const href=URL.createObjectURL(blob),a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(href),60000);
+  document.getElementById('password').value='';document.getElementById('confirm').value='';
+  status.textContent='Encrypted Backup file prepared';
+  message({result:'EXPORT_CREATED',file:name,counts,scope:'Authenticated-user rows readable under current RLS',encrypted:true,googleDriveUploaded:false,restoreTested:false,warning:'Verify counts and Google Drive upload. This is not a full database backup.'});
+ }catch(e){status.textContent='Backup NOT completed';message({result:'FAIL',error:String(e.message||e),warning:'No backup marked complete; existing data unchanged.'});}
+ finally{run.disabled=false;}
+};
+</script></body></html>
