@@ -1,0 +1,42 @@
+<!doctype html><html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>N349 — Drive Migration</title><style>body{font:15px/1.65 system-ui;max-width:720px;margin:30px auto;padding:0 16px;color:#1b2637}input{display:block;margin:9px 0 18px;padding:10px;max-width:100%;box-sizing:border-box}button{padding:12px 18px;border:0;background:#2058b9;color:#fff;border-radius:7px;cursor:pointer}button:disabled{opacity:.45}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#edf1f7;padding:15px;border-radius:8px}.warn{color:#ad4d00}</style></head><body><h2>N349 — Google Drive-এ সম্পূর্ণ Encrypted Data Migration</h2><p>প্রথমে <a href="/">Portal</a>-এ Login করুন। আপনার N337 Backup নির্বাচন করুন। এই প্রক্রিয়া <b>Supabase-এ কোনো পরিবর্তন করে না</b>।</p><label>Encrypted Backup JSON<input type="file" id="file" accept=".json,application/json"></label><label>Backup Password<input type="password" id="password" autocomplete="off"></label><button id="run">Migrate and Verify</button><p id="status">Ready</p><pre id="result">Not started</pre><p class="warn">এটি সম্পূর্ণ ডেটার Encrypted Drive Snapshot তৈরি করে; Portal-এর Live Save/Load এখনো Supabase-এ থাকবে। Snapshot verification সফল হলেও Production Cutover দাবি করা হবে না।</p><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>
+'use strict';
+const URL='https://oiaudmzrwtaljkcwbooi.supabase.co',KEY='sb_publishable_IHsq14XmgVhe9J8taquEkg_n_TCiDVn';
+const sb=window.supabase.createClient(URL,KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+const $=x=>document.getElementById(x),enc=new TextEncoder();
+const from64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+const hex=b=>Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
+async function digest(s){return hex(new Uint8Array(await crypto.subtle.digest('SHA-256',enc.encode(s))));}
+async function decrypt(w,password){
+ if(w.format!=='N333_AES_256_GCM_PBKDF2'||w.version!==1||!w.kdf||!w.cipher)throw Error('Wrong backup format');
+ const salt=from64(w.kdf.salt),iv=from64(w.cipher.iv),raw=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveKey']);
+ const key=await crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:w.kdf.iterations,hash:w.kdf.hash},raw,{name:'AES-GCM',length:256},false,['decrypt']);
+ return JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv},key,from64(w.cipher.data))));
+}
+async function call(action,data){
+ const {data:{session}}=await sb.auth.getSession();if(!session?.access_token)throw Error('Login to Portal first');
+ const r=await fetch(URL+'/functions/v1/portal-drive-notes',{method:'POST',headers:{Authorization:'Bearer '+session.access_token,apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({action,data}),cache:'no-store'});
+ const j=await r.json();if(!r.ok||j.ok!==true)throw Error(j.code||'Drive request failed');return j;
+}
+$('run').onclick=async()=>{const b=$('run');b.disabled=true;$('result').textContent='Working';try{
+ const f=$('file').files[0],password=$('password').value;if(!f||!password)throw Error('Select backup and enter password');
+ const {data:{user}}=await sb.auth.getUser();if(!user)throw Error('Login required');
+ const w=JSON.parse(await f.text()),data=await decrypt(w,password);
+ if(data.format!=='N337_SCOPED_PORTAL_BACKUP'||data.userId!==user.id)throw Error('Backup owner or format mismatch');
+ const expected={notes:11,notebooks:3,note_locks:0,notebook_locks:2};
+ for(const [table,n] of Object.entries(expected))if(!Array.isArray(data.tables?.[table])||data.tables[table].length!==n||data.counts?.[table]!==n)throw Error('Unexpected '+table+' count');
+ const notebooks=new Set(data.tables.notebooks.map(n=>n.id));
+ if(data.tables.notes.some(n=>n.notebook_id&&!notebooks.has(n.notebook_id)))throw Error('Orphan notebook reference');
+ for(const table of Object.keys(expected))if(data.tables[table].some(row=>row.user_id!==user.id))throw Error('Wrong owner in '+table);
+ const checksum=await digest(w.cipher.data);
+ $('status').textContent='Uploading encrypted snapshot…';
+ await call('snapshot_write',{ciphertext:w.cipher.data,sha256:checksum,kdf:w.kdf,cipher:{iv:w.cipher.iv},format:w.format});
+ $('status').textContent='Reading back from Google Drive…';
+ const read=await call('snapshot_read',{}),stored=read.snapshot;
+ if(stored.owner!==user.id||stored.sha256!==checksum||await digest(stored.ciphertext)!==checksum||stored.ciphertext!==w.cipher.data)throw Error('Read-back verification failed');
+ const checked=await decrypt({format:w.format,version:1,kdf:stored.kdf,cipher:{iv:stored.cipher.iv,data:stored.ciphertext}},password);
+ if(JSON.stringify(checked)!==JSON.stringify(data))throw Error('Decrypted roundtrip mismatch');
+ $('status').textContent='Encrypted migration snapshot verified';
+ $('result').textContent=JSON.stringify({result:'DRIVE_SNAPSHOT_VERIFIED',counts:expected,ownerVerified:true,encrypted:true,readBackVerified:true,supabaseModified:false,portalCutover:false},null,2);
+ $('password').value='';
+ }catch(e){$('status').textContent='Migration not confirmed';$('result').textContent=JSON.stringify({result:'FAILED_OR_ALREADY_EXISTS',error:String(e.message||e),note:'Existing Drive snapshot is never overwritten; Supabase data unchanged.'},null,2)}finally{b.disabled=false}};
+</script></body></html>
