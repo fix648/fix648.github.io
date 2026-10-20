@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="bn"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>N331 — Google Drive Notes CRUD Tests</title>
+<style>body{font:15px/1.55 system-ui,sans-serif;max-width:820px;margin:24px auto;padding:0 16px;color:#172334}h1{font-size:23px}button{background:#2159ce;color:white;border:0;border-radius:6px;padding:12px 18px;cursor:pointer}button:disabled{opacity:.5}pre{background:#f0f3f8;border-radius:8px;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere}small{color:#526071}a{color:#2159ce}</style></head>
+<body><h1>N331 — Google Drive Notes: 5 CRUD Tests</h1>
+<p>প্রথমে <a href="/">Personal Portal</a>-এ Login করুন। তারপর এখানে ফিরে Test চালান।</p>
+<p><strong>শুধু নতুন Pilot Note</strong> তৈরি, পড়া, পরিবর্তন, তালিকা যাচাই এবং Soft Delete করা হবে। পুরোনো Notes পরিবর্তন হবে না।</p>
+<button id="run">Run 5 CRUD Tests</button><p id="state" role="status">Ready</p><pre id="output">পরীক্ষা এখনও শুরু হয়নি।</pre>
+<p><small>কোনো Password, Access Token বা Secret ফলাফলে দেখানো হবে না। Test Note ID সংরক্ষণ করুন, প্রয়োজনে Troubleshooting-এ কাজে লাগবে।</small></p>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+const SB='https://oiaudmzrwtaljkcwbooi.supabase.co';
+const KEY='sb_publishable_IHsq14XmgVhe9J8taquEkg_n_TCiDVn';
+const client=window.supabase.createClient(SB,KEY,{auth:{detectSessionInUrl:false,persistSession:true,autoRefreshToken:true}});
+const button=document.getElementById('run'),state=document.getElementById('state'),output=document.getElementById('output');
+let results=[], noteId=null;
+function display(status,extra={}){output.textContent=JSON.stringify({result:status,noteId,tests:results,...extra},null,2);}
+async function request(action,data){
+ const {data:auth,error}=await client.auth.getSession();
+ if(error||!auth?.session?.access_token)throw Error('Portal-এ Login করুন; Session পাওয়া যায়নি');
+ const res=await fetch(SB+'/functions/v1/portal-drive-notes',{
+  method:'POST',headers:{'Authorization':'Bearer '+auth.session.access_token,'apikey':KEY,'Content-Type':'application/json'},
+  body:JSON.stringify({action,data}),cache:'no-store'});
+ let json;try{json=await res.json();}catch{throw Error(action+': Non-JSON HTTP '+res.status);}
+ if(!res.ok||json.ok!==true)throw Error(action+': HTTP '+res.status+' / '+String(json.code||'UNKNOWN'));
+ return {status:res.status,data:json};
+}
+async function step(action,data,verify){
+ state.textContent='Running: '+action+'…';display('RUNNING');
+ const r=await request(action,data);
+ if(!verify(r.data))throw Error(action+': RESPONSE_VERIFICATION_FAILED ('+String(r.data.code)+')');
+ results.push({action,result:'PASS',httpStatus:r.status,code:r.data.code});
+ display('RUNNING');return r.data;
+}
+button.onclick=async()=>{
+ button.disabled=true;results=[];noteId=crypto.randomUUID();
+ const original='N331 pilot note '+noteId.slice(0,8),changed=original+' updated';
+ try{
+  const created=await step('create',{id:noteId,title:original,content:'Pilot content N331'},x=>x.code==='NOTE_CREATED'&&x.revision===1);
+  const read=await step('read',{id:noteId},x=>x.code==='NOTE_READ'&&x.note?.id===noteId&&x.note?.content==='Pilot content N331'&&x.note?.revision===1);
+  const updated=await step('update',{id:noteId,title:changed,content:'Updated pilot content N331',revision:read.note.revision},x=>x.code==='NOTE_UPDATED'&&x.revision===2);
+  await step('list',null,x=>x.code==='NOTES_LISTED'&&Array.isArray(x.notes)&&x.notes.some(n=>n.id===noteId&&n.revision===2&&n.title===changed));
+  await step('delete',{id:noteId,revision:updated.revision},x=>x.code==='NOTE_SOFT_DELETED'&&x.revision===3);
+  state.textContent='5/5 PASS';display('PASS');
+ }catch(e){state.textContent='Test stopped: FAIL';display('FAIL',{error:String(e.message||e)});}
+ finally{button.disabled=false;}
+};
+</script></body></html>
